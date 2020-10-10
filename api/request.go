@@ -8,7 +8,7 @@ type Request struct {
 	// Directory where to find 'generator-main.yaml' specifying values and the generator to use. Required.
 	TargetBaseDir string `yaml:"targetdir"`
 
-	// yaml-file to read for RenderSpec, if not set, defaults to "generator-main.yaml".
+	// yaml-file to read for RenderSpec, if not set, defaults to "generated-main.yaml".
 	RenderSpecFile string `yaml:"renderspec"`
 }
 
@@ -16,7 +16,7 @@ type Request struct {
 type Response struct {
 	Success       bool
 	RenderedFiles []FileResult
-	Errors           []error
+	Errors        []error
 }
 
 type FileResult struct {

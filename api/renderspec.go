@@ -7,7 +7,7 @@ package api
 // You can also have this library render a file with the default values for a given generator.
 type RenderSpec struct {
 	// Name of the generator to use (determines yaml file to read for generator spec). The main one should be called
-	// main.yaml, and GeneratorName should be set to "main".
+	// generator-main.yaml, and GeneratorName should be set to "main".
 	GeneratorName string `yaml:"generator"`
 
 	// Assign variable "key" value "value". All values are evaluated as templates until they no longer change,
