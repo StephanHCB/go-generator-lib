@@ -1,12 +1,14 @@
 package api
 
+import "context"
+
 // Functionality that this library exposes.
 type Api interface {
 	// Obtain the list of available generator names by looking for generator-*.yaml files in sourceBaseDir
-	FindGeneratorNames(sourceBaseDir string) []string
+	FindGeneratorNames(ctx context.Context, sourceBaseDir string) ([]string, error)
 
 	// Obtain a specific generator spec, read from "generator-<generatorName>.yaml" in sourceBaseDir
-	ObtainGeneratorSpec(sourceBaseDir string, generatorName string) GeneratorSpec
+	ObtainGeneratorSpec(ctx context.Context, sourceBaseDir string, generatorName string) (*GeneratorSpec, error)
 
 	// Write a fresh RenderSpec with defaults set from the GeneratorSpec for the given generator
 	//
@@ -14,7 +16,7 @@ type Api interface {
 	//
 	// Warning: if the file exists, it is silently overwritten! The idea is that you keep both your
 	// generators and the generator targets in source control, so you can then review the changes made.
-	WriteRenderSpecWithDefaults(request Request, generatorName string) Response
+	WriteRenderSpecWithDefaults(ctx context.Context, request *Request, generatorName string) *Response
 
 	// Render files from templates according to RenderSpec and the GeneratorSpec it references.
 	//
@@ -23,5 +25,5 @@ type Api interface {
 	//
 	// Warning: existing files are silently overwritten! The idea is that you keep both your
 	// generators and the generator targets in source control, so you can then review the changes made.
-	Render(request Request) Response
+	Render(ctx context.Context, request *Request) *Response
 }

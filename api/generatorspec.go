@@ -10,7 +10,7 @@ type GeneratorSpec struct {
 	Templates []TemplateSpec `yaml:"templates"`
 
 	// The list of available variables
-	Variables []VariableSpec `yaml:"variables"`
+	Variables map[string]VariableSpec `yaml:"variables"`
 }
 
 // Specifies a template to process, or a list to iterate over, if WithItems is nonempty (setting {{ item }} each run)
@@ -30,7 +30,7 @@ type VariableSpec struct {
 	// Human readable description for the variable.
 	Description string `yaml:"description"`
 
-	// Regex validation pattern that the value must match.
+	// Regex validation pattern that the value must match. No validation if left empty.
 	ValidationPattern string `yaml:"pattern"`
 
 	// Default value. If left empty, the variable is considered required.

@@ -1,0 +1,15 @@
+templates:
+  - source: 'src/sub/sub.go.tmpl'
+    target: 'sub/sub.go'
+  - source: 'src/main.go.tmpl'
+    target: 'main.go'
+variables:
+  serviceUrl:
+    description: 'The URL of the service repository, to be used in imports etc.'
+    default: 'github.com/StephanHCB/temp'
+  serviceName:
+    description: 'The name of the service to be rendered.'
+    pattern: '[a-zA-Z]+'
+  helloMessage:
+    description: 'A message to be inserted in the code.'
+    default: 'hello world'

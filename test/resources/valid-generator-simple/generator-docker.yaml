@@ -1,0 +1,7 @@
+templates:
+  - source: 'Dockerfile.tmpl'
+    target: 'Dockerfile'
+variables:
+  serviceName:
+    description: 'The name of the service to be rendered'
+    pattern: '[a-zA-Z]+'
