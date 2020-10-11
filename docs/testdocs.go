@@ -17,11 +17,3 @@ func When(s string) {
 func Then(s string) {
 	log.Print("Then ", s)
 }
-
-func Description(s string) {
-	log.Print(s)
-}
-
-func Limitation(s string) {
-	log.Print("Limitation: ", s)
-}

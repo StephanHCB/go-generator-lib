@@ -6,3 +6,5 @@
 
 # compile and test output
 **/*.exe
+
+test/output/**/*
