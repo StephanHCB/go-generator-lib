@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -50,6 +51,22 @@ func (d *TargetDirectory) WriteFile(ctx context.Context, relativePath string, co
 		return err
 	}
 
-	err := ioutil.WriteFile(path.Join(d.baseDir, relativePath), contents, 0644)
-	return err
+	if err := d.createDirectoriesForFile(ctx, relativePath); err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(path.Join(d.baseDir, relativePath), contents, 0644)
+}
+
+func (d *TargetDirectory) createDirectoriesForFile(ctx context.Context, relativePathForFile string) error {
+	directoryPath := filepath.Dir(path.Join(d.baseDir, relativePathForFile))
+	fileInfo, err := os.Stat(directoryPath)
+	if err != nil {
+		// ok, does not exist, create directories
+		return os.MkdirAll(directoryPath, 0755)
+	}
+	if !fileInfo.IsDir() {
+		return fmt.Errorf("cannot create path up to %s, something is in the way", directoryPath)
+	}
+	return nil
 }

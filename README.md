@@ -7,7 +7,4 @@ functionality, so it can be used from both a CLI and (potentially) a service.
 
 ## TODOs
 
-* read generator-spec yaml from file
-* read render-spec yaml from file
 * validate render-spec against generator-spec
-* write render-spec yaml with defaults to file
