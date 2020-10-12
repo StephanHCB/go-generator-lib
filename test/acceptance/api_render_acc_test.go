@@ -194,9 +194,11 @@ parameters:
 
 	docs.Then("appropriate errors are returned")
 	require.False(t, actualResponse.Success)
-	require.Equal(t, 2, len(actualResponse.RenderedFiles))
+	require.Equal(t, 3, len(actualResponse.RenderedFiles))
 	require.True(t, actualResponse.RenderedFiles[0].Success)
 	require.Empty(t, actualResponse.RenderedFiles[0].Errors)
 	require.False(t, actualResponse.RenderedFiles[1].Success)
 	require.Equal(t, "template: src_main.go.tmpl:9: bad character U+0022 '\"'", actualResponse.RenderedFiles[1].Errors[0].Error())
+	require.False(t, actualResponse.RenderedFiles[2].Success)
+	require.Equal(t, "open ../resources/valid-generator-syntaxerror-templates/src/notfound.go.tmpl: The system cannot find the file specified.", actualResponse.RenderedFiles[2].Errors[0].Error())
 }

@@ -3,6 +3,8 @@ templates:
     target: 'sub/sub.go.txt'
   - source: 'src/main.go.tmpl'
     target: 'main.go.txt'
+  - source: 'src/notfound.go.tmpl'
+    target: 'notfound.go.txt'
 variables:
   serviceUrl:
     description: 'The URL of the service repository, to be used in imports etc.'

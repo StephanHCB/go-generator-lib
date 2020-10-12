@@ -89,25 +89,12 @@ func (i *GeneratorImpl) Render(ctx context.Context, request *api.Request) *api.R
 	renderedFiles := []api.FileResult{}
 	allSuccessful := true
 	for _, tplSpec := range genSpec.Templates {
-		templateName := strings.ReplaceAll(tplSpec.RelativeSourcePath, "/", "_")
-		templateContents, err := sourceDir.ReadFile(ctx, tplSpec.RelativeSourcePath)
-		if err == nil {
-			var tmpl *template.Template
-			tmpl, err = template.New(templateName).Parse(string(templateContents))
-			if err == nil {
-				var buf bytes.Buffer
-				err = tmpl.ExecuteTemplate(&buf, templateName, renderSpec.Variables)
-				if err == nil {
-					err = targetDir.WriteFile(ctx, tplSpec.RelativeTargetPath, buf.Bytes())
-					if err == nil {
-						renderedFiles = append(renderedFiles, i.successFileResult(ctx, tplSpec.RelativeTargetPath))
-					}
-				}
-			}
-		}
+		err := i.renderSingleTemplate(ctx, tplSpec, renderSpec, sourceDir, targetDir)
 		if err != nil {
 			renderedFiles = append(renderedFiles, i.errorFileResult(ctx, tplSpec.RelativeTargetPath, err))
 			allSuccessful = false
+		} else {
+			renderedFiles = append(renderedFiles, i.successFileResult(ctx, tplSpec.RelativeTargetPath))
 		}
 	}
 
@@ -119,6 +106,29 @@ func (i *GeneratorImpl) Render(ctx context.Context, request *api.Request) *api.R
 }
 
 // helper functions
+
+func (i *GeneratorImpl) renderSingleTemplate(ctx context.Context, tplSpec api.TemplateSpec, renderSpec *api.RenderSpec, sourceDir *generatordir.GeneratorDirectory, targetDir *targetdir.TargetDirectory) error {
+	templateName := strings.ReplaceAll(tplSpec.RelativeSourcePath, "/", "_")
+	templateContents, err := sourceDir.ReadFile(ctx, tplSpec.RelativeSourcePath)
+	if err != nil {
+		return err
+	}
+
+	tmpl, err := template.New(templateName).Parse(string(templateContents))
+	if err != nil {
+		return err
+	}
+
+	var buf bytes.Buffer
+	err = tmpl.ExecuteTemplate(&buf, templateName, renderSpec.Variables)
+	if err != nil {
+		// unsure if this is reachable. All errors I've been able to produce are found during template parse
+		return err
+	}
+
+	err = targetDir.WriteFile(ctx, tplSpec.RelativeTargetPath, buf.Bytes())
+	return err
+}
 
 func (i *GeneratorImpl) parseGenSpec(ctx context.Context, specYaml []byte) (*api.GeneratorSpec, error) {
 	spec := &api.GeneratorSpec{}
