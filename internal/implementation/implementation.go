@@ -48,6 +48,7 @@ func (i *GeneratorImpl) WriteRenderSpecWithDefaults(ctx context.Context, request
 
 	renderSpecYaml, err := i.renderRenderSpec(ctx, renderSpec)
 	if err != nil {
+		// unreachable with current feature set
 		return i.errorResponseToplevel(ctx, err)
 	}
 
@@ -91,7 +92,8 @@ func (i *GeneratorImpl) Render(ctx context.Context, request *api.Request) *api.R
 		templateName := strings.ReplaceAll(tplSpec.RelativeSourcePath, "/", "_")
 		templateContents, err := sourceDir.ReadFile(ctx, tplSpec.RelativeSourcePath)
 		if err == nil {
-			tmpl, err := template.New(templateName).Parse(string(templateContents))
+			var tmpl *template.Template
+			tmpl, err = template.New(templateName).Parse(string(templateContents))
 			if err == nil {
 				var buf bytes.Buffer
 				err = tmpl.ExecuteTemplate(&buf, templateName, renderSpec.Variables)
