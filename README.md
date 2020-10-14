@@ -17,9 +17,9 @@ Example:
 ```
 templates:
   - source: 'src/sub/sub.go.tmpl'
-    target: 'sub/sub.go.txt'
+    target: 'sub/sub.go'
   - source: 'src/main.go.tmpl'
-    target: 'main.go.txt'
+    target: 'main.go'
 variables:
   serviceUrl:
     description: 'The URL of the service repository, to be used in imports etc.'
@@ -33,7 +33,8 @@ variables:
 ```
 
 This defines two templates `src/sub/sub.go.tmpl` and `src/main.go.tmpl` and what target path
-they'll be rendered to. It also specifies which parameter variables will be available during rendering.
+they'll be rendered to in the target directory. 
+It also specifies which parameter variables will be available during rendering.
 
   * If a variable does not have a default value, it is a required parameter.
   * if a variable has a pattern set, the parameter value must regex-match that pattern. Please be advised that
@@ -88,7 +89,7 @@ target directory under source control, so you can then inspect the changes and p
 
 ### Example call to Render
 
-```go
+```
 func main() {
     ctx := context.TODO()
     request := &api.Request{
