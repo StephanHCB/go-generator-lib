@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	aulogging "github.com/StephanHCB/go-autumn-logging"
 	"github.com/StephanHCB/go-generator-lib/api"
 	"github.com/StephanHCB/go-generator-lib/internal/repository/generatordir"
 	"github.com/StephanHCB/go-generator-lib/internal/repository/targetdir"
 	"gopkg.in/yaml.v2"
+	"regexp"
 	"strings"
 	"text/template"
 )
@@ -40,10 +42,10 @@ func (i *GeneratorImpl) WriteRenderSpecWithDefaults(ctx context.Context, request
 
 	renderSpec := &api.RenderSpec{
 		GeneratorName: generatorName,
-		Variables: map[string]string{},
+		Parameters: map[string]string{},
 	}
 	for k, v := range genSpec.Variables {
-		renderSpec.Variables[k] = v.DefaultValue
+		renderSpec.Parameters[k] = v.DefaultValue
 	}
 
 	renderSpecYaml, err := i.renderRenderSpec(ctx, renderSpec)
@@ -83,7 +85,26 @@ func (i *GeneratorImpl) Render(ctx context.Context, request *api.Request) *api.R
 		return i.errorResponseToplevel(ctx, err)
 	}
 
-	// TODO: validate variable values here - not part of current acceptance test
+	for varName, varSpec := range genSpec.Variables {
+		if varSpec.DefaultValue == "" {
+			if val, ok := renderSpec.Parameters[varName]; !ok || val == "" {
+				return i.errorResponseToplevel(ctx, fmt.Errorf("Parameter %s is required but missing or empty", varName))
+			}
+		}
+		if varSpec.ValidationPattern != "" {
+			val, ok := renderSpec.Parameters[varName]
+			if !ok {
+				val = ""
+			}
+			matches, err := regexp.MatchString(varSpec.ValidationPattern, val)
+			if err != nil {
+				return i.errorResponseToplevel(ctx, fmt.Errorf("Variable declaration %s has invalid pattern: %s", varName, err.Error()))
+			}
+			if !matches {
+				return i.errorResponseToplevel(ctx, fmt.Errorf("Value for parameter %s does not match pattern %s", varName, varSpec.ValidationPattern))
+			}
+		}
+	}
 
 	sourceDir := generatordir.Instance(ctx, request.SourceBaseDir)
 	renderedFiles := []api.FileResult{}
@@ -120,7 +141,7 @@ func (i *GeneratorImpl) renderSingleTemplate(ctx context.Context, tplSpec api.Te
 	}
 
 	var buf bytes.Buffer
-	err = tmpl.ExecuteTemplate(&buf, templateName, renderSpec.Variables)
+	err = tmpl.ExecuteTemplate(&buf, templateName, renderSpec.Parameters)
 	if err != nil {
 		// unsure if this is reachable. All errors I've been able to produce are found during template parse
 		return err

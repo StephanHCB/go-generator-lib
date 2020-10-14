@@ -202,3 +202,33 @@ parameters:
 	require.False(t, actualResponse.RenderedFiles[2].Success)
 	require.Equal(t, "open ../resources/valid-generator-syntaxerror-templates/src/notfound.go.tmpl: The system cannot find the file specified.", actualResponse.RenderedFiles[2].Errors[0].Error())
 }
+
+func TestRender_ShouldComplainIfVariableValuesInvalid(t *testing.T) {
+	docs.Given("a valid generator source directory and a valid target directory")
+	sourcedirpath := "../resources/valid-generator-simple"
+	targetdirpath := "../output/render-6"
+	require.Nil(t, os.RemoveAll(targetdirpath))
+	require.Nil(t, os.Mkdir(targetdirpath, 0755))
+
+	docs.Given("a valid render spec file for generator main with an invalid variable value")
+	renderspec := `generator: main
+parameters:
+  helloMessage: hello world
+  serviceName: 'invalid service name'
+  serviceUrl: github.com/StephanHCB/temp
+`
+	dir := targetdir.Instance(context.TODO(), targetdirpath)
+	require.Nil(t, dir.WriteFile(context.TODO(), "generated-main.yaml", []byte(renderspec)))
+
+	docs.When("Render is invoked")
+	request := &api.Request{
+		SourceBaseDir: sourcedirpath,
+		TargetBaseDir: targetdirpath,
+	}
+	actualResponse := generatorlib.Render(context.TODO(), request)
+
+	docs.Then("appropriate validation errors are returned")
+	require.False(t, actualResponse.Success)
+	require.Empty(t, actualResponse.RenderedFiles)
+	require.Equal(t, "Value for parameter serviceName does not match pattern ^[a-z-]+$", actualResponse.Errors[0].Error())
+}
