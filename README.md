@@ -20,6 +20,11 @@ templates:
     target: 'sub/sub.go'
   - source: 'src/main.go.tmpl'
     target: 'main.go'
+  - source: 'src/web/controller.go.tmpl'
+    target: 'web/controller/{{ .item }}.go'
+    with_items:
+     - health
+     - reservations
 variables:
   serviceUrl:
     description: 'The URL of the service repository, to be used in imports etc.'
@@ -32,7 +37,7 @@ variables:
     default: 'hello world'
 ```
 
-This defines two templates `src/sub/sub.go.tmpl` and `src/main.go.tmpl` and what target path
+This defines templates like `src/sub/sub.go.tmpl` and `src/main.go.tmpl` and what target path
 they'll be rendered to in the target directory. 
 It also specifies which parameter variables will be available during rendering.
 
@@ -40,9 +45,19 @@ It also specifies which parameter variables will be available during rendering.
   * if a variable has a pattern set, the parameter value must regex-match that pattern. Please be advised that
     you must enclose the pattern with ^...$ if you want to force the whole value to match, otherwise
     it's enough for part of the value to match the pattern.
-  
+
 The idea is that you keep your generators under version control.
 
+Note how you can create ansible-style loops using the same template to generate multiple output files using `with_items`.
+In fact, the output file name is always parsed using the same template engine as the actual templates,
+so you could also use other variables in it. 
+
+If you set `with_items`, the template is used multiple times
+with the `item` variable set to the value you provided under `with_items`. These values can also be 
+a whole yaml data structure, you simply access it as `{{ .item.some.field }}`. 
+
+Also note how output directories are created for you on the fly if they don't exist.
+  
 The [golang template language](https://golang.org/pkg/text/template/#example_Template) is pretty 
 versatile, vaguely similar to the .j2 templates used by ansible. Here's a very simple example
 of how to include one of the parameters in your template output:
@@ -58,7 +73,7 @@ Given a generator's path, you can ask this library for the list of available gen
 
 Given a generator's path and one of the generator names, you can ask this library to give you the 
 `api.GeneratorSpec` as a data structure read from the generator specification file (useful if
-you wish to expose this libary as a service). Just call `generatorlib.ObtainGeneratorSpec`.
+you wish to expose it as a service). Just call `generatorlib.ObtainGeneratorSpec`.
 
 ## Render Targets
 
