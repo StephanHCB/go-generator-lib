@@ -85,17 +85,17 @@ func (i *GeneratorImpl) Render(ctx context.Context, request *api.Request) *api.R
 		return i.errorResponseToplevel(ctx, err)
 	}
 
+	parameters := make(map[string]interface{})
 	for varName, varSpec := range genSpec.Variables {
-		if varSpec.DefaultValue == "" {
-			if val, ok := renderSpec.Parameters[varName]; !ok || val == "" {
-				return i.errorResponseToplevel(ctx, fmt.Errorf("Parameter %s is required but missing or empty", varName))
-			}
+		val, ok := renderSpec.Parameters[varName]
+		if !ok {
+			val = varSpec.DefaultValue
+		}
+
+		if val == "" {
+			return i.errorResponseToplevel(ctx, fmt.Errorf("Parameter %s is required but missing or empty", varName))
 		}
 		if varSpec.ValidationPattern != "" {
-			val, ok := renderSpec.Parameters[varName]
-			if !ok {
-				val = ""
-			}
 			matches, err := regexp.MatchString(varSpec.ValidationPattern, val)
 			if err != nil {
 				return i.errorResponseToplevel(ctx, fmt.Errorf("Variable declaration %s has invalid pattern: %s", varName, err.Error()))
@@ -104,19 +104,16 @@ func (i *GeneratorImpl) Render(ctx context.Context, request *api.Request) *api.R
 				return i.errorResponseToplevel(ctx, fmt.Errorf("Value for parameter %s does not match pattern %s", varName, varSpec.ValidationPattern))
 			}
 		}
+		parameters[varName] = val
 	}
 
 	sourceDir := generatordir.Instance(ctx, request.SourceBaseDir)
 	renderedFiles := []api.FileResult{}
 	allSuccessful := true
 	for _, tplSpec := range genSpec.Templates {
-		err := i.renderSingleTemplate(ctx, tplSpec, renderSpec, sourceDir, targetDir)
-		if err != nil {
-			renderedFiles = append(renderedFiles, i.errorFileResult(ctx, tplSpec.RelativeTargetPath, err))
-			allSuccessful = false
-		} else {
-			renderedFiles = append(renderedFiles, i.successFileResult(ctx, tplSpec.RelativeTargetPath))
-		}
+		rendered, success := i.renderSingleTemplate(ctx, &tplSpec, parameters, sourceDir, targetDir)
+		renderedFiles = append(renderedFiles, rendered...)
+		allSuccessful = allSuccessful && success
 	}
 
 	if allSuccessful {
@@ -128,27 +125,82 @@ func (i *GeneratorImpl) Render(ctx context.Context, request *api.Request) *api.R
 
 // helper functions
 
-func (i *GeneratorImpl) renderSingleTemplate(ctx context.Context, tplSpec api.TemplateSpec, renderSpec *api.RenderSpec, sourceDir *generatordir.GeneratorDirectory, targetDir *targetdir.TargetDirectory) error {
+func (i *GeneratorImpl) renderSingleTemplate(ctx context.Context, tplSpec *api.TemplateSpec, parameters map[string]interface{}, sourceDir *generatordir.GeneratorDirectory, targetDir *targetdir.TargetDirectory) ([]api.FileResult, bool) {
 	templateName := strings.ReplaceAll(tplSpec.RelativeSourcePath, "/", "_")
 	templateContents, err := sourceDir.ReadFile(ctx, tplSpec.RelativeSourcePath)
 	if err != nil {
-		return err
+		return []api.FileResult{i.errorFileResult(ctx, tplSpec.RelativeTargetPath, err)}, false
 	}
 
 	tmpl, err := template.New(templateName).Parse(string(templateContents))
 	if err != nil {
-		return err
+		return []api.FileResult{i.errorFileResult(ctx, tplSpec.RelativeTargetPath, err)}, false
 	}
 
+	renderedFiles := []api.FileResult{}
+	allSuccessful := true
+	if len(tplSpec.WithItems) > 0 {
+		for counter, item := range tplSpec.WithItems {
+			parameters["item"] = item
+			targetPath, err := i.renderString(ctx, parameters, fmt.Sprintf("%s_path_%d", templateName, counter), tplSpec.RelativeTargetPath)
+			if err != nil {
+				renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, err))
+				allSuccessful = false
+			} else {
+				err := i.renderAndWriteFile(ctx, parameters, tmpl, templateName, targetDir, targetPath)
+				if err != nil {
+					renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, err))
+					allSuccessful = false
+				} else {
+					renderedFiles = append(renderedFiles, i.successFileResult(ctx, targetPath))
+				}
+			}
+		}
+	} else {
+		targetPath, err := i.renderString(ctx, parameters, fmt.Sprintf("%s_path", templateName), tplSpec.RelativeTargetPath)
+		if err != nil {
+			renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, err))
+			allSuccessful = false
+		} else {
+			err := i.renderAndWriteFile(ctx, parameters, tmpl, templateName, targetDir, targetPath)
+			if err != nil {
+				renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, err))
+				allSuccessful = false
+			} else {
+				renderedFiles = append(renderedFiles, i.successFileResult(ctx, targetPath))
+			}
+		}
+	}
+
+	return renderedFiles, allSuccessful
+}
+
+func (i *GeneratorImpl) renderAndWriteFile(ctx context.Context, parameters map[string]interface{}, tmpl *template.Template, templateName string, targetDir *targetdir.TargetDirectory, targetPath string) error {
 	var buf bytes.Buffer
-	err = tmpl.ExecuteTemplate(&buf, templateName, renderSpec.Parameters)
+	err := tmpl.ExecuteTemplate(&buf, templateName, parameters)
 	if err != nil {
 		// unsure if this is reachable. All errors I've been able to produce are found during template parse
 		return err
 	}
 
-	err = targetDir.WriteFile(ctx, tplSpec.RelativeTargetPath, buf.Bytes())
+	err = targetDir.WriteFile(ctx, targetPath, buf.Bytes())
 	return err
+}
+
+func (i *GeneratorImpl) renderString(ctx context.Context, parameters map[string]interface{}, templateName string, templateContents string) (string, error) {
+	tmpl, err := template.New(templateName).Parse(templateContents)
+	if err != nil {
+		return "", err
+	}
+
+	var buf bytes.Buffer
+	err = tmpl.ExecuteTemplate(&buf, templateName, parameters)
+	if err != nil {
+		// unsure if this is reachable. All errors I've been able to produce are found during template parse
+		return "", err
+	}
+
+	return buf.String(), nil
 }
 
 func (i *GeneratorImpl) parseGenSpec(ctx context.Context, specYaml []byte) (*api.GeneratorSpec, error) {

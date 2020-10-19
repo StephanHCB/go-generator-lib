@@ -232,3 +232,61 @@ parameters:
 	require.Empty(t, actualResponse.RenderedFiles)
 	require.Equal(t, "Value for parameter serviceName does not match pattern ^[a-z-]+$", actualResponse.Errors[0].Error())
 }
+
+func TestRender_ShouldWriteExpectedFilesForItemized(t *testing.T) {
+	docs.Given("a valid generator source directory and a valid target directory")
+	sourcedirpath := "../resources/valid-generator-simple"
+	targetdirpath := "../output/render-7"
+	require.Nil(t, os.RemoveAll(targetdirpath))
+	require.Nil(t, os.Mkdir(targetdirpath, 0755))
+
+	docs.Given("a valid render spec file for generator items, which uses with_items and template directives")
+	renderspec := `generator: items
+parameters: {}
+`
+	dir := targetdir.Instance(context.TODO(), targetdirpath)
+	require.Nil(t, dir.WriteFile(context.TODO(), "generated-items.yaml", []byte(renderspec)))
+
+	docs.When("Render is invoked")
+	request := &api.Request{
+		SourceBaseDir: sourcedirpath,
+		TargetBaseDir: targetdirpath,
+		RenderSpecFile: "generated-items.yaml",
+	}
+	actualResponse := generatorlib.Render(context.TODO(), request)
+
+	docs.Then("the return value is as expected and the correct files are written")
+	expectedFilename1 := "first.txt"
+	expectedContent1 := "Hi Frank!\n"
+	expectedFilename2 := "second.txt"
+	expectedContent2 := "Hi John!\n"
+	expectedFilename3 := "third.txt"
+	expectedContent3 := "Hi Eve!\n"
+	expectedResponse := &api.Response{
+		Success: true,
+		RenderedFiles: []api.FileResult{
+			{
+				Success:          true,
+				RelativeFilePath: expectedFilename1,
+			},
+			{
+				Success:          true,
+				RelativeFilePath: expectedFilename2,
+			},
+			{
+				Success:          true,
+				RelativeFilePath: expectedFilename3,
+			},
+		},
+	}
+	require.Equal(t, expectedResponse, actualResponse)
+	actual1, err := dir.ReadFile(context.TODO(), expectedFilename1)
+	require.Nil(t, err)
+	require.Equal(t, expectedContent1, string(actual1))
+	actual2, err := dir.ReadFile(context.TODO(), expectedFilename2)
+	require.Nil(t, err)
+	require.Equal(t, expectedContent2, string(actual2))
+	actual3, err := dir.ReadFile(context.TODO(), expectedFilename3)
+	require.Nil(t, err)
+	require.Equal(t, expectedContent3, string(actual3))
+}

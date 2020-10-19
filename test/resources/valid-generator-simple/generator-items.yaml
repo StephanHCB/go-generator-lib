@@ -1,0 +1,14 @@
+templates:
+  - source: 'item.txt.tmpl'
+    target: '{{ .item.file }}.txt'
+    with_items:
+      - name: Frank
+        file: first
+      - name: John
+        file: second
+      - name: Eve
+        file: third
+variables:
+  message:
+    description: 'A message to be inserted in the greeting.'
+    default: 'Hi'
