@@ -54,7 +54,7 @@ func TestObtainGeneratorSpec_ShouldFailOnMissingGeneratorFile(t *testing.T) {
 	docs.Then("an appropriate error is returned")
 	require.Equal(t, &api.GeneratorSpec{}, actual)
 	require.NotNil(t, err)
-	expectedErr := "open ../resources/valid-generator-simple/generator-notthere.yaml: The system cannot find the file specified."
+	expectedErr := "error reading generator spec file generator-notthere.yaml: open ../resources/valid-generator-simple/generator-notthere.yaml: The system cannot find the file specified."
 	require.Equal(t, expectedErr, err.Error())
 }
 
@@ -71,7 +71,7 @@ func TestObtainGeneratorSpec_ShouldFailOnInvalidGeneratorYaml(t *testing.T) {
 	docs.Then("an appropriate error is returned")
 	require.Equal(t, &api.GeneratorSpec{}, actual)
 	require.NotNil(t, err)
-	expectedErr := "yaml: unmarshal errors:\n  line 11: key \"identical\" already set in map"
+	expectedErr := "error parsing generator spec from file generator-duplicatekey.yaml: yaml: unmarshal errors:\n  line 11: key \"identical\" already set in map"
 	require.Equal(t, expectedErr, err.Error())
 }
 
@@ -88,7 +88,7 @@ func TestObtainGeneratorSpec_ShouldFailOnGeneratorYamlWithUnknownKeys(t *testing
 	docs.Then("an appropriate error is returned")
 	require.Equal(t, &api.GeneratorSpec{}, actual)
 	require.NotNil(t, err)
-	expectedErr := "yaml: unmarshal errors:\n  line 1: field notvalid not found in type api.GeneratorSpec"
+	expectedErr := "error parsing generator spec from file generator-unknownkey.yaml: yaml: unmarshal errors:\n  line 1: field notvalid not found in type api.GeneratorSpec"
 	require.Equal(t, expectedErr, err.Error())
 }
 

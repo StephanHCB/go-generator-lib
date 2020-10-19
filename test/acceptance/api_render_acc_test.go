@@ -99,7 +99,7 @@ func TestRender_ShouldComplainIfRenderSpecNotFound(t *testing.T) {
 	docs.Then("an appropriate error is returned")
 	require.False(t, actualResponse.Success)
 	require.Empty(t, actualResponse.RenderedFiles)
-	expectedErrorMsg := "open ../output/render-2/generated-main.yaml: The system cannot find the file specified."
+	expectedErrorMsg := "error reading render spec file generated-main.yaml in target directory ../output/render-2: open ../output/render-2/generated-main.yaml: The system cannot find the file specified."
 	require.Equal(t, expectedErrorMsg, actualResponse.Errors[0].Error())
 }
 
@@ -128,7 +128,7 @@ something: weird
 	docs.Then("an appropriate error is returned")
 	require.False(t, actualResponse.Success)
 	require.Empty(t, actualResponse.RenderedFiles)
-	expectedErrorMsg := "yaml: unmarshal errors:\n  line 2: field something not found in type api.RenderSpec"
+	expectedErrorMsg := "error parsing render spec file generated-something.yaml in target directory ../output/render-3: yaml: unmarshal errors:\n  line 2: field something not found in type api.RenderSpec"
 	require.Equal(t, expectedErrorMsg, actualResponse.Errors[0].Error())
 }
 
@@ -162,7 +162,7 @@ parameters:
 	docs.Then("an appropriate error is returned")
 	require.False(t, actualResponse.Success)
 	require.Empty(t, actualResponse.RenderedFiles)
-	expectedErrorMsg := "open ../resources/valid-generator-simple/generator-missing.yaml: The system cannot find the file specified."
+	expectedErrorMsg := "error reading generator spec file generator-missing.yaml: open ../resources/valid-generator-simple/generator-missing.yaml: The system cannot find the file specified."
 	require.Equal(t, expectedErrorMsg, actualResponse.Errors[0].Error())
 }
 
@@ -230,7 +230,7 @@ parameters:
 	docs.Then("appropriate validation errors are returned")
 	require.False(t, actualResponse.Success)
 	require.Empty(t, actualResponse.RenderedFiles)
-	require.Equal(t, "Value for parameter serviceName does not match pattern ^[a-z-]+$", actualResponse.Errors[0].Error())
+	require.Equal(t, "value for parameter serviceName does not match pattern ^[a-z-]+$", actualResponse.Errors[0].Error())
 }
 
 func TestRender_ShouldWriteExpectedFilesForItemized(t *testing.T) {

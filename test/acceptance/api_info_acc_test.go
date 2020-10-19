@@ -31,7 +31,7 @@ func TestFindGeneratorNames_ShouldComplainMissingDirectory(t *testing.T) {
 	docs.Then("an appropriate error is returned and the resulting list is empty")
 	require.Empty(t, actual)
 	require.NotNil(t, err)
-	expectedErrorMsg := "CreateFile ../resources/invalid-does-not-exist: The system cannot find the file specified."
+	expectedErrorMsg := "invalid generator directory: baseDir ../resources/invalid-does-not-exist does not exist"
 	require.Equal(t, expectedErrorMsg, err.Error())
 }
 
@@ -45,6 +45,6 @@ func TestFindGeneratorNames_ShouldComplainNotDirectory(t *testing.T) {
 	docs.Then("an appropriate error is returned and the resulting list is empty")
 	require.Empty(t, actual)
 	require.NotNil(t, err)
-	expectedErrorMsg := "baseDir must be a directory. ../resources/valid-generator-simple/generator-docker.yaml is not."
+	expectedErrorMsg := "invalid generator directory: baseDir ../resources/valid-generator-simple/generator-docker.yaml must be a directory"
 	require.Equal(t, expectedErrorMsg, err.Error())
 }
