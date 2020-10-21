@@ -125,12 +125,12 @@ func (i *GeneratorImpl) renderSingleTemplate(ctx context.Context, tplSpec *api.T
 	templateName := strings.ReplaceAll(tplSpec.RelativeSourcePath, "/", "_")
 	templateContents, err := sourceDir.ReadFile(ctx, tplSpec.RelativeSourcePath)
 	if err != nil {
-		return []api.FileResult{i.errorFileResult(ctx, tplSpec.RelativeTargetPath, err)}, false
+		return []api.FileResult{i.errorFileResult(ctx, tplSpec.RelativeTargetPath, fmt.Errorf("failed to load template %s: %s", tplSpec.RelativeSourcePath, err))}, false
 	}
 
 	tmpl, err := template.New(templateName).Parse(string(templateContents))
 	if err != nil {
-		return []api.FileResult{i.errorFileResult(ctx, tplSpec.RelativeTargetPath, err)}, false
+		return []api.FileResult{i.errorFileResult(ctx, tplSpec.RelativeTargetPath, fmt.Errorf("failed to parse template %s: %s", tplSpec.RelativeSourcePath, err))}, false
 	}
 
 	renderedFiles := []api.FileResult{}
@@ -140,12 +140,12 @@ func (i *GeneratorImpl) renderSingleTemplate(ctx context.Context, tplSpec *api.T
 			parameters["item"] = item
 			targetPath, err := i.renderString(ctx, parameters, fmt.Sprintf("%s_path_%d", templateName, counter), tplSpec.RelativeTargetPath)
 			if err != nil {
-				renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, err))
+				renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, fmt.Errorf("error evaluating target path from '%s' for item #%d: %s", tplSpec.RelativeTargetPath, counter+1, err)))
 				allSuccessful = false
 			} else {
 				err := i.renderAndWriteFile(ctx, parameters, tmpl, templateName, targetDir, targetPath)
 				if err != nil {
-					renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, err))
+					renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, fmt.Errorf("error evaluating template for target '%s' (item #%d): %s", targetPath, counter+1, err)))
 					allSuccessful = false
 				} else {
 					renderedFiles = append(renderedFiles, i.successFileResult(ctx, targetPath))
@@ -155,12 +155,12 @@ func (i *GeneratorImpl) renderSingleTemplate(ctx context.Context, tplSpec *api.T
 	} else {
 		targetPath, err := i.renderString(ctx, parameters, fmt.Sprintf("%s_path", templateName), tplSpec.RelativeTargetPath)
 		if err != nil {
-			renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, err))
+			renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, fmt.Errorf("error evaluating target path from '%s': %s", tplSpec.RelativeTargetPath, err)))
 			allSuccessful = false
 		} else {
 			err := i.renderAndWriteFile(ctx, parameters, tmpl, templateName, targetDir, targetPath)
 			if err != nil {
-				renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, err))
+				renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, fmt.Errorf("error evaluating template for target '%s': %s", targetPath, err)))
 				allSuccessful = false
 			} else {
 				renderedFiles = append(renderedFiles, i.successFileResult(ctx, targetPath))

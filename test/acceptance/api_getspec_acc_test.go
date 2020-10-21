@@ -92,3 +92,16 @@ func TestObtainGeneratorSpec_ShouldFailOnGeneratorYamlWithUnknownKeys(t *testing
 	require.Equal(t, expectedErr, err.Error())
 }
 
+func TestObtainGeneratorSpec_ShouldFailOnGeneratorDirWithTrailingSlash(t *testing.T) {
+	docs.Given("an invalid generator source directory")
+	sourcedir := "../resources/invalid-generator-specs/"
+
+	docs.When("ObtainGeneratorSpec is invoked")
+	actual, err := generatorlib.ObtainGeneratorSpec(context.TODO(), sourcedir, "doesnotmatter")
+
+	docs.Then("an appropriate error is returned")
+	require.Equal(t, &api.GeneratorSpec{}, actual)
+	require.NotNil(t, err)
+	expectedErr := "invalid generator directory: baseDir ../resources/invalid-generator-specs/ must not contain trailing slash"
+	require.Equal(t, expectedErr, err.Error())
+}

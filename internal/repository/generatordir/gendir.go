@@ -43,6 +43,7 @@ func (d *GeneratorDirectory) FindGeneratorNames(ctx context.Context) ([]string, 
 
 	files, err := ioutil.ReadDir(d.baseDir)
 	if err != nil {
+		// not sure this is even reachable given we check for file stats in CheckValid
 		return []string{}, fmt.Errorf("error reading generator directory: %s", err.Error())
 	}
 
@@ -79,7 +80,7 @@ func (d *GeneratorDirectory) ObtainGeneratorSpec(ctx context.Context, generatorN
 	return generatorSpec, nil
 }
 
-// --- low level methods, public so they can be used in tests ---
+// --- public low level methods ---
 
 func (d *GeneratorDirectory) ReadFile(ctx context.Context, relativePath string) ([]byte, error) {
 	if err := d.CheckValid(ctx); err != nil {
