@@ -104,10 +104,15 @@ func (d *TargetDirectory) createDirectoriesForFile(ctx context.Context, relative
 	fileInfo, err := os.Stat(directoryPath)
 	if err != nil {
 		// ok, does not exist, create directories
-		return os.MkdirAll(directoryPath, 0755)
+		err2 := os.MkdirAll(directoryPath, 0755)
+		if err2 != nil {
+			return fmt.Errorf("cannot create path up to %s, something is in the way or invalid path: %s", strings.ReplaceAll(directoryPath, "\\", "/"), err2.Error())
+		} else {
+			return nil
+		}
 	}
 	if !fileInfo.IsDir() {
-		return fmt.Errorf("cannot create path up to %s, something is in the way", directoryPath)
+		return fmt.Errorf("cannot create path up to %s, something is in the way", strings.ReplaceAll(directoryPath, "\\", "/"))
 	}
 	return nil
 }
