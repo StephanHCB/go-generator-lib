@@ -12,7 +12,7 @@ type Api interface {
 
 	// Write a fresh RenderSpec with defaults set from the GeneratorSpec for the given generator
 	//
-	// The name of the file to write this to is "generated-<request.RenderSpecFile>.yaml".
+	// The name of the file to write this to is "generated-<generatorName>.yaml".
 	//
 	// Warning: if the file exists, it is silently overwritten! The idea is that you keep both your
 	// generators and the generator targets in source control, so you can then review the changes made.
