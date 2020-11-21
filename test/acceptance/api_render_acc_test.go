@@ -383,15 +383,19 @@ parameters: {}
 
 	docs.Then("appropriate errors are returned")
 	require.False(t, actualResponse.Success)
-	require.Equal(t, 4, len(actualResponse.RenderedFiles))
+	require.Equal(t, 6, len(actualResponse.RenderedFiles))
 	require.False(t, actualResponse.RenderedFiles[0].Success)
-	require.Equal(t, "error evaluating target path from '{{ .item.file .txt' for item #1: template: item.txt.tmpl_path_0:1: unclosed action", actualResponse.RenderedFiles[0].Errors[0].Error())
+	require.Equal(t, "error evaluating target path from '{{ .item.file .txt' for item #1: template: item.txt.tmpl_path_1:1: unclosed action", actualResponse.RenderedFiles[0].Errors[0].Error())
 	require.False(t, actualResponse.RenderedFiles[1].Success)
-	require.Equal(t, "error evaluating target path from '{{ .item.file .txt' for item #2: template: item.txt.tmpl_path_1:1: unclosed action", actualResponse.RenderedFiles[1].Errors[0].Error())
+	require.Equal(t, "error evaluating target path from '{{ .item.file .txt' for item #2: template: item.txt.tmpl_path_2:1: unclosed action", actualResponse.RenderedFiles[1].Errors[0].Error())
 	require.False(t, actualResponse.RenderedFiles[2].Success)
-	require.Equal(t, "error evaluating target path from '{{ .item.file .txt' for item #3: template: item.txt.tmpl_path_2:1: unclosed action", actualResponse.RenderedFiles[2].Errors[0].Error())
+	require.Equal(t, "error evaluating target path from '{{ .item.file .txt' for item #3: template: item.txt.tmpl_path_3:1: unclosed action", actualResponse.RenderedFiles[2].Errors[0].Error())
 	require.False(t, actualResponse.RenderedFiles[3].Success)
 	require.Equal(t, "error evaluating target path from '{{ .something .txt': template: item.txt.tmpl_path:1: unclosed action", actualResponse.RenderedFiles[3].Errors[0].Error())
+	require.False(t, actualResponse.RenderedFiles[4].Success)
+	require.Equal(t, "error evaluating condition from '{{ .something .txt': template: item.txt.tmpl_condition:1: unclosed action", actualResponse.RenderedFiles[4].Errors[0].Error())
+	require.False(t, actualResponse.RenderedFiles[5].Success)
+	require.Equal(t, "error evaluating condition from '{{ .item.file ' for item #1: template: item.txt.tmpl_condition_1:1: unclosed action", actualResponse.RenderedFiles[5].Errors[0].Error())
 }
 
 func TestRender_ShouldComplainIfSyntaxErrorsInTemplateWithItems(t *testing.T) {
@@ -459,7 +463,7 @@ parameters: {}
 	require.False(t, actualResponse.Success)
 	require.Equal(t, 2, len(actualResponse.RenderedFiles))
 	require.False(t, actualResponse.RenderedFiles[0].Success)
-	require.Equal(t, "error evaluating template for target '' (item #1): open ../output/render-12: is a directory", actualResponse.RenderedFiles[0].Errors[0].Error())
+	require.Equal(t, "error evaluating template for target '' for item #1: open ../output/render-12: is a directory", actualResponse.RenderedFiles[0].Errors[0].Error())
 	require.False(t, actualResponse.RenderedFiles[1].Success)
 	require.Equal(t, "error evaluating template for target '': open ../output/render-12: is a directory", actualResponse.RenderedFiles[1].Errors[0].Error())
 }

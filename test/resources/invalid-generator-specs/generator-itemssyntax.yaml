@@ -10,6 +10,15 @@ templates:
         file: third
   - source: 'item.txt.tmpl'
     target: '{{ .something .txt'
+  - source: 'item.txt.tmpl'
+    target: 'output.txt'
+    condition: '{{ .something .txt'
+  - source: 'item.txt.tmpl'
+    target: 'output2.txt'
+    condition: '{{ .item.file '
+    with_items:
+      - name: Frank
+        file: first
 variables:
   message:
     description: 'A message to be inserted in the greeting.'
