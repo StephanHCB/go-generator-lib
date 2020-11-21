@@ -262,6 +262,7 @@ parameters: {}
 	expectedContent2 := "Hi John!\n"
 	expectedFilename3 := "third.txt"
 	expectedContent3 := "Hi Eve!\n"
+	expectedFilename4 := "fourth.txt"
 	expectedResponse := &api.Response{
 		Success: true,
 		RenderedFiles: []api.FileResult{
@@ -289,6 +290,9 @@ parameters: {}
 	actual3, err := dir.ReadFile(context.TODO(), expectedFilename3)
 	require.Nil(t, err)
 	require.Equal(t, expectedContent3, string(actual3))
+	// fourth file has a condition and should have been skipped
+	_, err = dir.ReadFile(context.TODO(), expectedFilename4)
+	require.NotNil(t, err)
 }
 
 func TestRender_ShouldComplainIfRequiredParameterValueMissing(t *testing.T) {

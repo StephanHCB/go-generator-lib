@@ -16,6 +16,8 @@ type GeneratorSpec struct {
 // Specifies a template to process, or a list to iterate over, if WithItems is nonempty (setting {{ item }} each run)
 //
 // Every field is evaluated as a template itself, so you can use variables in all fields.
+//
+// If Condition is set and evaluates to one of 'false', '0', 'no', the render run is skipped
 type TemplateSpec struct {
 	RelativeSourcePath string        `yaml:"source"`
 	RelativeTargetPath string        `yaml:"target"`

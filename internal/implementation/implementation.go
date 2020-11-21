@@ -143,12 +143,18 @@ func (i *GeneratorImpl) renderSingleTemplate(ctx context.Context, tplSpec *api.T
 				renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, fmt.Errorf("error evaluating target path from '%s' for item #%d: %s", tplSpec.RelativeTargetPath, counter+1, err)))
 				allSuccessful = false
 			} else {
-				err := i.renderAndWriteFile(ctx, parameters, tmpl, templateName, targetDir, targetPath)
+				condition, err := i.evaluateCondition(ctx, tplSpec.Condition, parameters, fmt.Sprintf("%s_condition_%d", templateName, counter))
 				if err != nil {
-					renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, fmt.Errorf("error evaluating template for target '%s' (item #%d): %s", targetPath, counter+1, err)))
+					renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, fmt.Errorf("error evaluating condition from '%s' for item #%d: %s", tplSpec.Condition, counter+1, err)))
 					allSuccessful = false
-				} else {
-					renderedFiles = append(renderedFiles, i.successFileResult(ctx, targetPath))
+				} else if condition {
+					err := i.renderAndWriteFile(ctx, parameters, tmpl, templateName, targetDir, targetPath)
+					if err != nil {
+						renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, fmt.Errorf("error evaluating template for target '%s' (item #%d): %s", targetPath, counter+1, err)))
+						allSuccessful = false
+					} else {
+						renderedFiles = append(renderedFiles, i.successFileResult(ctx, targetPath))
+					}
 				}
 			}
 		}
@@ -158,17 +164,34 @@ func (i *GeneratorImpl) renderSingleTemplate(ctx context.Context, tplSpec *api.T
 			renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, fmt.Errorf("error evaluating target path from '%s': %s", tplSpec.RelativeTargetPath, err)))
 			allSuccessful = false
 		} else {
-			err := i.renderAndWriteFile(ctx, parameters, tmpl, templateName, targetDir, targetPath)
+			condition, err := i.evaluateCondition(ctx, tplSpec.Condition, parameters, fmt.Sprintf("%s_condition", templateName))
 			if err != nil {
-				renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, fmt.Errorf("error evaluating template for target '%s': %s", targetPath, err)))
+				renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, fmt.Errorf("error evaluating condition from '%s': %s", tplSpec.Condition, err)))
 				allSuccessful = false
-			} else {
-				renderedFiles = append(renderedFiles, i.successFileResult(ctx, targetPath))
+			} else if condition {
+				err := i.renderAndWriteFile(ctx, parameters, tmpl, templateName, targetDir, targetPath)
+				if err != nil {
+					renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, fmt.Errorf("error evaluating template for target '%s': %s", targetPath, err)))
+					allSuccessful = false
+				} else {
+					renderedFiles = append(renderedFiles, i.successFileResult(ctx, targetPath))
+				}
 			}
 		}
 	}
 
 	return renderedFiles, allSuccessful
+}
+
+func (i *GeneratorImpl) evaluateCondition(ctx context.Context, condition string, parameters map[string]interface{}, templateName string) (bool, error) {
+	if condition == "" {
+		return true, nil
+	}
+	rendered, err := i.renderString(ctx, parameters, templateName, condition)
+	if err != nil {
+		return false, err
+	}
+	return rendered != "false" && rendered != "0" && rendered != "no" && rendered != "skip", nil
 }
 
 func (i *GeneratorImpl) renderAndWriteFile(ctx context.Context, parameters map[string]interface{}, tmpl *template.Template, templateName string, targetDir *targetdir.TargetDirectory, targetPath string) error {

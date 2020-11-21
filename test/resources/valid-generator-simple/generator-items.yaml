@@ -1,6 +1,7 @@
 templates:
   - source: 'item.txt.tmpl'
     target: '{{ .item.file }}.txt'
+    condition: '{{ if eq .item.file "fourth" }}false{{ end }}'
     with_items:
       - name: Frank
         file: first
@@ -8,6 +9,8 @@ templates:
         file: second
       - name: Eve
         file: third
+      - name: Tanja
+        file: fourth
 variables:
   message:
     description: 'A message to be inserted in the greeting.'

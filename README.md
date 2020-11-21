@@ -22,9 +22,11 @@ templates:
     target: 'main.go'
   - source: 'src/web/controller.go.tmpl'
     target: 'web/controller/{{ .item }}.go'
+    condition: '{{ if eq .item "skipped" }}false{{ end }}'
     with_items:
      - health
      - reservations
+     - skipped
 variables:
   serviceUrl:
     description: 'The URL of the service repository, to be used in imports etc.'
@@ -55,6 +57,11 @@ so you could also use other variables in it.
 If you set `with_items`, the template is used multiple times
 with the `item` variable set to the value you provided under `with_items`. These values can also be 
 a whole yaml data structure, you simply access it as `{{ .item.some.field }}`. 
+
+Note how you can add a `condition` that will be evaluated for the template. Inside it, you can use
+variables, or even `item`. If the condition evaluates to any one of `0`, `false`, `skip`, `no` the template will not be 
+rendered. Note that the empty string counts as true, that means that if you do not specify a condition,
+the template is rendered.
 
 Also note how output directories are created for you on the fly if they don't exist.
   
