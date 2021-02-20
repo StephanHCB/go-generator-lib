@@ -230,7 +230,7 @@ parameters:
 	docs.Then("appropriate validation errors are returned")
 	require.False(t, actualResponse.Success)
 	require.Empty(t, actualResponse.RenderedFiles)
-	require.Equal(t, "value for parameter serviceName does not match pattern ^[a-z-]+$", actualResponse.Errors[0].Error())
+	require.Equal(t, "value for parameter 'serviceName' does not match pattern ^[a-z-]+$", actualResponse.Errors[0].Error())
 }
 
 func TestRender_ShouldWriteExpectedFilesForItemized(t *testing.T) {
@@ -321,7 +321,7 @@ parameters:
 	docs.Then("appropriate validation errors are returned")
 	require.False(t, actualResponse.Success)
 	require.Empty(t, actualResponse.RenderedFiles)
-	require.Equal(t, "parameter serviceName is required but missing or empty", actualResponse.Errors[0].Error())
+	require.Equal(t, "parameter 'serviceName' is required but missing or empty", actualResponse.Errors[0].Error())
 }
 
 func TestRender_ShouldComplainIfInvalidPattern(t *testing.T) {
@@ -354,7 +354,7 @@ parameters:
 	docs.Then("appropriate validation errors are returned")
 	require.False(t, actualResponse.Success)
 	require.Empty(t, actualResponse.RenderedFiles)
-	require.Equal(t, "variable declaration serviceName has invalid pattern: error parsing regexp: missing closing ]: `[a-z-+$`", actualResponse.Errors[0].Error())
+	require.Equal(t, "variable declaration serviceName has invalid pattern (this is an error in the generator spec, not the render request): error parsing regexp: missing closing ]: `[a-z-+$`", actualResponse.Errors[0].Error())
 }
 
 func TestRender_ShouldComplainIfTemplateSyntaxErrorsInGenSpec(t *testing.T) {

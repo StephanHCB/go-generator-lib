@@ -38,6 +38,15 @@ func (i *GeneratorLogfacade) WriteRenderSpecWithDefaults(ctx context.Context, re
 	return result
 }
 
+func (i *GeneratorLogfacade) WriteRenderSpecWithValues(ctx context.Context, request *api.Request, generatorName string, parameters map[string]string) *api.Response {
+	aulogging.Logger.Ctx(ctx).Debug().Printf("entering WriteRenderSpecWithValues sourceBaseDir=%s targetBaseDir=%s renderSpecFile=%s generatorName=%s", request.SourceBaseDir, request.TargetBaseDir, request.RenderSpecFile, generatorName)
+	result := i.Wrapped.WriteRenderSpecWithValues(ctx, request, generatorName, parameters)
+	if len(result.Errors) > 0 {
+		aulogging.Logger.Ctx(ctx).Warn().WithErr(result.Errors[0]).Printf("%d error(s) in WriteRenderSpecWithValues: first error was %s", len(result.Errors), result.Errors[0].Error())
+	}
+	return result
+}
+
 func (i *GeneratorLogfacade) Render(ctx context.Context, request *api.Request) *api.Response {
 	aulogging.Logger.Ctx(ctx).Debug().Printf("entering Render sourceBaseDir=%s targetBaseDir=%s renderspec=%s", request.SourceBaseDir, request.TargetBaseDir, request.RenderSpecFile)
 	result := i.Wrapped.Render(ctx, request)

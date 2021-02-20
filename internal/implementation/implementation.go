@@ -37,8 +37,40 @@ func (i *GeneratorImpl) WriteRenderSpecWithDefaults(ctx context.Context, request
 
 	renderSpec := i.constructRenderSpecWithDefaults(ctx, generatorName, genSpec)
 
-	targetFile := "generated-" + generatorName + ".yaml"
-	err = targetDir.WriteRenderSpec(ctx, renderSpec, targetFile)
+	// no validation here because the defaults may be empty or may intentionally not match the validation rule
+	// (might be something like 'put in your fqdn name here')
+
+	targetFile, err := targetDir.WriteRenderSpec(ctx, renderSpec, request.RenderSpecFile)
+	if err != nil {
+		return i.errorResponseToplevel(ctx, err)
+	}
+	return i.successResponse(ctx, []api.FileResult{i.successFileResult(ctx, targetFile)})
+}
+
+func (i *GeneratorImpl) WriteRenderSpecWithValues(ctx context.Context, request *api.Request, generatorName string, parameters map[string]string) *api.Response {
+	sourceDir := generatordir.Instance(ctx, request.SourceBaseDir)
+	targetDir := targetdir.Instance(ctx, request.TargetBaseDir)
+
+	genSpec, err := sourceDir.ObtainGeneratorSpec(ctx, generatorName)
+	if err != nil {
+		return i.errorResponseToplevel(ctx, err)
+	}
+
+	renderSpec := i.constructRenderSpecWithValuesOrDefaults(ctx, generatorName, genSpec, parameters)
+
+	_, err = i.constructAndValidateParameterMap(ctx, genSpec, renderSpec)
+	if err != nil {
+		return i.errorResponseToplevel(ctx, err)
+	}
+
+	// check for extraneous parameters
+	for k, _ := range parameters {
+		if _, ok := genSpec.Variables[k]; !ok {
+			return i.errorResponseToplevel(ctx, fmt.Errorf("parameter '%s' is not allowed according to generator spec", k))
+		}
+	}
+
+	targetFile, err := targetDir.WriteRenderSpec(ctx, renderSpec, request.RenderSpecFile)
 	if err != nil {
 		return i.errorResponseToplevel(ctx, err)
 	}
@@ -59,7 +91,7 @@ func (i *GeneratorImpl) Render(ctx context.Context, request *api.Request) *api.R
 		return i.errorResponseToplevel(ctx, err)
 	}
 
-	parameters, err := i.constructParameterMap(ctx, genSpec, renderSpec)
+	parameters, err := i.constructAndValidateParameterMap(ctx, genSpec, renderSpec)
 	if err != nil {
 		return i.errorResponseToplevel(ctx, err)
 	}
@@ -74,18 +106,27 @@ func (i *GeneratorImpl) Render(ctx context.Context, request *api.Request) *api.R
 
 // helper functions
 
-func (i *GeneratorImpl) constructRenderSpecWithDefaults(_ context.Context, generatorName string, genSpec *api.GeneratorSpec) *api.RenderSpec {
+func (i *GeneratorImpl) constructRenderSpecWithDefaults(ctx context.Context, generatorName string, genSpec *api.GeneratorSpec) *api.RenderSpec {
+	return i.constructRenderSpecWithValuesOrDefaults(ctx, generatorName, genSpec, map[string]string{})
+}
+
+func (i *GeneratorImpl) constructRenderSpecWithValuesOrDefaults(_ context.Context, generatorName string, genSpec *api.GeneratorSpec, parameters map[string]string) *api.RenderSpec {
 	renderSpec := &api.RenderSpec{
 		GeneratorName: generatorName,
 		Parameters:    map[string]string{},
 	}
 	for k, v := range genSpec.Variables {
-		renderSpec.Parameters[k] = v.DefaultValue
+		// a fetch on a map missing key will produce the empty value for that type
+		renderSpec.Parameters[k] = parameters[k]
+		if renderSpec.Parameters[k] == "" {
+			// again, the default may be the empty string
+			renderSpec.Parameters[k] = v.DefaultValue
+		}
 	}
 	return renderSpec
 }
 
-func (i *GeneratorImpl) constructParameterMap(_ context.Context, genSpec *api.GeneratorSpec, renderSpec *api.RenderSpec) (map[string]interface{}, error) {
+func (i *GeneratorImpl) constructAndValidateParameterMap(_ context.Context, genSpec *api.GeneratorSpec, renderSpec *api.RenderSpec) (map[string]interface{}, error) {
 	parameters := make(map[string]interface{})
 	for varName, varSpec := range genSpec.Variables {
 		val, ok := renderSpec.Parameters[varName]
@@ -94,15 +135,15 @@ func (i *GeneratorImpl) constructParameterMap(_ context.Context, genSpec *api.Ge
 		}
 
 		if val == "" {
-			return nil, fmt.Errorf("parameter %s is required but missing or empty", varName)
+			return nil, fmt.Errorf("parameter '%s' is required but missing or empty", varName)
 		}
 		if varSpec.ValidationPattern != "" {
 			matches, err := regexp.MatchString(varSpec.ValidationPattern, val)
 			if err != nil {
-				return nil, fmt.Errorf("variable declaration %s has invalid pattern: %s", varName, err.Error())
+				return nil, fmt.Errorf("variable declaration %s has invalid pattern (this is an error in the generator spec, not the render request): %s", varName, err.Error())
 			}
 			if !matches {
-				return nil, fmt.Errorf("value for parameter %s does not match pattern %s", varName, varSpec.ValidationPattern)
+				return nil, fmt.Errorf("value for parameter '%s' does not match pattern %s", varName, varSpec.ValidationPattern)
 			}
 		}
 		parameters[varName] = val

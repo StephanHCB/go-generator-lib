@@ -25,6 +25,10 @@ func WriteRenderSpecWithDefaults(ctx context.Context, request *api.Request, gene
 	return Instance.WriteRenderSpecWithDefaults(ctx, request, generatorName)
 }
 
+func WriteRenderSpecWithValues(ctx context.Context, request *api.Request, generatorName string, parameters map[string]string) *api.Response {
+	return Instance.WriteRenderSpecWithValues(ctx, request, generatorName, parameters)
+}
+
 func Render(ctx context.Context, request *api.Request) *api.Response {
 	return Instance.Render(ctx, request)
 }

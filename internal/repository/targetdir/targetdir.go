@@ -36,8 +36,8 @@ func (d *TargetDirectory) CheckValid(ctx context.Context) error {
 	return fmt.Errorf("error invalid target directory: baseDir %s does not exist", d.baseDir)
 }
 
-func (d *TargetDirectory) ObtainRenderSpec(ctx context.Context, renderSpecFilename string) (*api.RenderSpec, error) {
-	specFile := d.RenderSpecFilenameOrDefault(ctx, renderSpecFilename)
+func (d *TargetDirectory) ObtainRenderSpec(ctx context.Context, renderSpecFilenameOrEmptyString string) (*api.RenderSpec, error) {
+	specFile := d.RenderSpecFilenameOrDefault(ctx, renderSpecFilenameOrEmptyString)
 
 	renderSpecYaml, err := d.ReadFile(ctx, specFile)
 	if err != nil {
@@ -50,26 +50,33 @@ func (d *TargetDirectory) ObtainRenderSpec(ctx context.Context, renderSpecFilena
 	return renderSpec, nil
 }
 
-func (d *TargetDirectory) WriteRenderSpec(ctx context.Context, renderSpec *api.RenderSpec, renderSpecFilename string) error {
+func (d *TargetDirectory) WriteRenderSpec(ctx context.Context, renderSpec *api.RenderSpec, renderSpecFilenameOrEmptyString string) (string, error) {
+	targetFile := d.RenderSpecFilenameOrDefaultForGenerator(ctx, renderSpecFilenameOrEmptyString, renderSpec.GeneratorName)
+
 	renderSpecYaml, err := d.renderRenderSpec(ctx, renderSpec)
 	if err != nil {
 		// unreachable with current feature set as far as I'm aware
-		return fmt.Errorf("error preparing render spec: %s", err.Error())
+		return targetFile, fmt.Errorf("error preparing render spec: %s", err.Error())
 	}
 
-	err = d.WriteFile(ctx, renderSpecFilename, renderSpecYaml)
+	err = d.WriteFile(ctx, targetFile, renderSpecYaml)
 	if err != nil {
-		return fmt.Errorf("error writing render spec file %s in target dir %s: %s", renderSpecFilename, d.baseDir, err.Error())
+		return targetFile, fmt.Errorf("error writing render spec file %s in target dir %s: %s", targetFile, d.baseDir, err.Error())
 	}
-	return nil
+	return targetFile, nil
 }
 
 // --- low level methods, public so they can be used in tests ---
 
 func (d *TargetDirectory) RenderSpecFilenameOrDefault(ctx context.Context, renderSpecFilename string) string {
+	return d.RenderSpecFilenameOrDefaultForGenerator(ctx, renderSpecFilename, "main")
+}
+
+func (d *TargetDirectory) RenderSpecFilenameOrDefaultForGenerator(ctx context.Context, renderSpecFilename string, generatorName string) string {
 	if renderSpecFilename == "" {
-		aulogging.Logger.Ctx(ctx).Debug().Print("using default renderSpec generated-main.yaml")
-		return "generated-main.yaml"
+		result := "generated-" + generatorName + ".yaml"
+		aulogging.Logger.Ctx(ctx).Debug().Printf("using default renderSpec %s", result)
+		return result
 	}
 	return renderSpecFilename
 }
