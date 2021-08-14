@@ -224,9 +224,9 @@ func TestWriteRenderSpecWithValues_ShouldComplainMissingSpec(t *testing.T) {
 	actualResponse := generatorlib.WriteRenderSpecWithValues(context.TODO(), request, name, map[string]string{})
 
 	docs.Then("the response reports an appropriate error")
-	expectedErrorMessage := "error reading generator spec file generator-notpresent.yaml: open ../resources/valid-generator-simple/generator-notpresent.yaml: The system cannot find the file specified."
+	expectedErrorMessagePart := "error reading generator spec file generator-notpresent.yaml: open ../resources/valid-generator-simple/generator-notpresent.yaml: "
 	require.False(t, actualResponse.Success)
-	require.Equal(t, expectedErrorMessage, actualResponse.Errors[0].Error())
+	require.Contains(t, actualResponse.Errors[0].Error(), expectedErrorMessagePart)
 }
 
 func TestWriteRenderSpecWithValues_ShouldComplainTargetExistsIsDir(t *testing.T) {

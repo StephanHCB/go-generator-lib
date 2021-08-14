@@ -99,8 +99,8 @@ func TestRender_ShouldComplainIfRenderSpecNotFound(t *testing.T) {
 	docs.Then("an appropriate error is returned")
 	require.False(t, actualResponse.Success)
 	require.Empty(t, actualResponse.RenderedFiles)
-	expectedErrorMsg := "error reading render spec file generated-main.yaml in target directory ../output/render-2: open ../output/render-2/generated-main.yaml: The system cannot find the file specified."
-	require.Equal(t, expectedErrorMsg, actualResponse.Errors[0].Error())
+	expectedErrorMsgPart := "error reading render spec file generated-main.yaml in target directory ../output/render-2: open ../output/render-2/generated-main.yaml: "
+	require.Contains(t, actualResponse.Errors[0].Error(), expectedErrorMsgPart)
 }
 
 func TestRender_ShouldComplainIfRenderInvalid(t *testing.T) {
@@ -162,8 +162,8 @@ parameters:
 	docs.Then("an appropriate error is returned")
 	require.False(t, actualResponse.Success)
 	require.Empty(t, actualResponse.RenderedFiles)
-	expectedErrorMsg := "error reading generator spec file generator-missing.yaml: open ../resources/valid-generator-simple/generator-missing.yaml: The system cannot find the file specified."
-	require.Equal(t, expectedErrorMsg, actualResponse.Errors[0].Error())
+	expectedErrorMsgPart := "error reading generator spec file generator-missing.yaml: open ../resources/valid-generator-simple/generator-missing.yaml: "
+	require.Contains(t, actualResponse.Errors[0].Error(), expectedErrorMsgPart)
 }
 
 func TestRender_ShouldComplainIfTemplateSyntaxErrors(t *testing.T) {
@@ -200,7 +200,7 @@ parameters:
 	require.False(t, actualResponse.RenderedFiles[1].Success)
 	require.Equal(t, "failed to parse template src/main.go.tmpl: template: src_main.go.tmpl:9: bad character U+0022 '\"'", actualResponse.RenderedFiles[1].Errors[0].Error())
 	require.False(t, actualResponse.RenderedFiles[2].Success)
-	require.Equal(t, "failed to load template src/notfound.go.tmpl: open ../resources/valid-generator-syntaxerror-templates/src/notfound.go.tmpl: The system cannot find the file specified.", actualResponse.RenderedFiles[2].Errors[0].Error())
+	require.Contains(t, actualResponse.RenderedFiles[2].Errors[0].Error(), "failed to load template src/notfound.go.tmpl: open ../resources/valid-generator-syntaxerror-templates/src/notfound.go.tmpl: ")
 }
 
 func TestRender_ShouldComplainIfVariableValuesInvalid(t *testing.T) {

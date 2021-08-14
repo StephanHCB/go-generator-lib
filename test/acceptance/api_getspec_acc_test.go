@@ -54,8 +54,8 @@ func TestObtainGeneratorSpec_ShouldFailOnMissingGeneratorFile(t *testing.T) {
 	docs.Then("an appropriate error is returned")
 	require.Equal(t, &api.GeneratorSpec{}, actual)
 	require.NotNil(t, err)
-	expectedErr := "error reading generator spec file generator-notthere.yaml: open ../resources/valid-generator-simple/generator-notthere.yaml: The system cannot find the file specified."
-	require.Equal(t, expectedErr, err.Error())
+	expectedErrPart := "error reading generator spec file generator-notthere.yaml: open ../resources/valid-generator-simple/generator-notthere.yaml: "
+	require.Contains(t, err.Error(), expectedErrPart)
 }
 
 func TestObtainGeneratorSpec_ShouldFailOnInvalidGeneratorYaml(t *testing.T) {
