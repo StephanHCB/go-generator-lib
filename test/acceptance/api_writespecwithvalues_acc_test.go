@@ -204,7 +204,108 @@ parameters:
 	require.Equal(t, expectedResponse, actualResponse)
 }
 
-// TODO test with a structured default value
+func TestWriteRenderSpecWithValues_ShouldCreateMainSpec_StructuredDefaults(t *testing.T) {
+	docs.Given("a valid generator source directory and a valid target directory")
+	sourcedirpath := "../resources/valid-generator-structured"
+	targetdirpath := "../output/write-render-spec-values-10"
+	require.Nil(t, os.RemoveAll(targetdirpath))
+	require.Nil(t, os.Mkdir(targetdirpath, 0755))
+
+	docs.Given("a valid generator name")
+	name := "main"
+
+	request := &api.Request{
+		SourceBaseDir: sourcedirpath,
+		TargetBaseDir: targetdirpath,
+		RenderSpecFile: "generated-main.yaml",
+	}
+	docs.When("WriteRenderSpecWithValues is invoked without specifying parameters")
+	parameters := map[string]interface{}{}
+	actualResponse := generatorlib.WriteRenderSpecWithValues(context.TODO(), request, name, parameters)
+
+	docs.Then("the correct spec file is written and the return value is as expected")
+	expectedFilename := "generated-main.yaml"
+	expectedContent := `generator: main
+parameters:
+  helloMessage: hello world
+  structureList:
+  - one
+  - two
+  - three:
+    - sub 1
+    - sub 2
+  structureMap:
+    commonName: European wildcat
+    species: felis silvestris
+`
+    // note how the structureMap gets sorted...
+
+	expectedResponse := &api.Response{
+		Success: true,
+		RenderedFiles: []api.FileResult{
+			{
+				Success:          true,
+				RelativeFilePath: expectedFilename,
+			},
+		},
+	}
+	dir := targetdir.Instance(context.TODO(), targetdirpath)
+	actual, err := dir.ReadFile(context.TODO(), expectedFilename)
+	require.Nil(t, err)
+	require.Equal(t, expectedContent, string(actual))
+	require.Equal(t, expectedResponse, actualResponse)
+}
+
+func TestWriteRenderSpecWithValues_ShouldCreateMainSpec_StructuredValues(t *testing.T) {
+	docs.Given("a valid generator source directory and a valid target directory")
+	sourcedirpath := "../resources/valid-generator-structured"
+	targetdirpath := "../output/write-render-spec-values-11"
+	require.Nil(t, os.RemoveAll(targetdirpath))
+	require.Nil(t, os.Mkdir(targetdirpath, 0755))
+
+	docs.Given("a valid generator name")
+	name := "main"
+
+	request := &api.Request{
+		SourceBaseDir: sourcedirpath,
+		TargetBaseDir: targetdirpath,
+		RenderSpecFile: "generated-main.yaml",
+	}
+	docs.When("WriteRenderSpecWithValues is invoked without specifying parameters")
+	parameters := map[string]interface{}{
+		"structureList": []string{"eins", "zwei", "drei"},
+	}
+	actualResponse := generatorlib.WriteRenderSpecWithValues(context.TODO(), request, name, parameters)
+
+	docs.Then("the correct spec file is written and the return value is as expected")
+	expectedFilename := "generated-main.yaml"
+	expectedContent := `generator: main
+parameters:
+  helloMessage: hello world
+  structureList:
+  - eins
+  - zwei
+  - drei
+  structureMap:
+    commonName: European wildcat
+    species: felis silvestris
+`
+
+	expectedResponse := &api.Response{
+		Success: true,
+		RenderedFiles: []api.FileResult{
+			{
+				Success:          true,
+				RelativeFilePath: expectedFilename,
+			},
+		},
+	}
+	dir := targetdir.Instance(context.TODO(), targetdirpath)
+	actual, err := dir.ReadFile(context.TODO(), expectedFilename)
+	require.Nil(t, err)
+	require.Equal(t, expectedContent, string(actual))
+	require.Equal(t, expectedResponse, actualResponse)
+}
 
 // --- error cases
 

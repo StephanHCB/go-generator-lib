@@ -80,6 +80,50 @@ func main() {
 	require.Equal(t, expectedContent2, string(actual2))
 }
 
+func TestRender_ShouldWriteExpectedFilesForStructured(t *testing.T) {
+	docs.Given("a valid generator source directory and a valid target directory")
+	sourcedirpath := "../resources/valid-generator-structured"
+	targetdirpath := "../output/render-1a"
+	require.Nil(t, os.RemoveAll(targetdirpath))
+	require.Nil(t, os.Mkdir(targetdirpath, 0755))
+
+	docs.Given("a valid render spec file for generator main")
+	renderspec := `generator: main
+`
+	dir := targetdir.Instance(context.TODO(), targetdirpath)
+	require.Nil(t, dir.WriteFile(context.TODO(), "generated-main.yaml", []byte(renderspec)))
+
+	docs.When("Render is invoked")
+	request := &api.Request{
+		SourceBaseDir: sourcedirpath,
+		TargetBaseDir: targetdirpath,
+	}
+	actualResponse := generatorlib.Render(context.TODO(), request)
+
+	docs.Then("the return value is as expected and the correct files are written")
+	expectedFilename1 := "main.txt"
+	expectedContent1 := `imagine a European wildcat
+
+then look up something in a list: two
+
+then look up something in a structure in a list: [sub 1 sub 2]
+(value is itself a list)
+`
+	expectedResponse := &api.Response{
+		Success: true,
+		RenderedFiles: []api.FileResult{
+			{
+				Success:          true,
+				RelativeFilePath: expectedFilename1,
+			},
+		},
+	}
+	require.Equal(t, expectedResponse, actualResponse)
+	actual1, err := dir.ReadFile(context.TODO(), expectedFilename1)
+	require.Nil(t, err)
+	require.Equal(t, expectedContent1, string(actual1))
+}
+
 func TestRender_ShouldComplainIfRenderSpecNotFound(t *testing.T) {
 	docs.Given("a valid generator source directory and a valid target directory")
 	sourcedirpath := "../resources/valid-generator-simple"

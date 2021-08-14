@@ -1,0 +1,20 @@
+templates:
+  - source: 'main.txt.tmpl'
+    target: 'main.txt'
+variables:
+  helloMessage:
+    description: 'A message to be inserted in the code.'
+    default: 'hello world'
+  structureList:
+    description: 'A structured parameter that is a list at top level'
+    default:
+      - 'one'
+      - 'two'
+      - three:
+          - 'sub 1'
+          - 'sub 2'
+  structureMap:
+    description: 'A structured parameter that is a map at top level'
+    default:
+      species: 'felis silvestris'
+      commonName: 'European wildcat'
