@@ -32,9 +32,9 @@ type VariableSpec struct {
 	// Human readable description for the variable.
 	Description string `yaml:"description"`
 
-	// Regex validation pattern that the value must match. No validation if left empty.
+	// Regex validation pattern that the string representation (%v) of the value must match. No validation if left empty.
 	ValidationPattern string `yaml:"pattern"`
 
-	// Default value. If left empty, the variable is considered required.
-	DefaultValue string `yaml:"default"`
+	// Default value. If missing, the variable is considered required. Note that variables can have structured content.
+	DefaultValue interface{} `yaml:"default"`
 }

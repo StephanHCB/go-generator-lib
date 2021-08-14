@@ -30,7 +30,7 @@ func TestWriteRenderSpecWithValues_ShouldCreateMainSpec(t *testing.T) {
 		RenderSpecFile: "generated-main.yaml",
 	}
 	docs.When("WriteRenderSpecWithValues is invoked with valid parameters")
-	parameters := map[string]string{
+	parameters := map[string]interface{}{
 		"helloMessage": "hello nice world",
 		"serviceName": "something-valid",
 		"serviceUrl": "github.com/StephanHCB/scratch",
@@ -77,7 +77,7 @@ func TestWriteRenderSpecWithValues_ShouldCreateNonstandardSpec(t *testing.T) {
 		RenderSpecFile: "generator-values.dat",
 	}
 	docs.When("WriteRenderSpecWithValues is invoked with valid parameters and a nonstandard render spec filename")
-	parameters := map[string]string{
+	parameters := map[string]interface{}{
 		"helloMessage": "hello nice world",
 		"serviceName": "something-valid",
 		"serviceUrl": "github.com/StephanHCB/scratch",
@@ -123,7 +123,7 @@ func TestWriteRenderSpecWithValues_ShouldCreateDefaultSpec(t *testing.T) {
 		TargetBaseDir: targetdirpath,
 	}
 	docs.When("WriteRenderSpecWithValues is invoked with valid parameters, but empty render spec filename")
-	parameters := map[string]string{
+	parameters := map[string]interface{}{
 		"helloMessage": "hello nice world",
 		"serviceName": "something-valid",
 		"serviceUrl": "github.com/StephanHCB/scratch",
@@ -179,7 +179,7 @@ parameters:
 		TargetBaseDir: targetdirpath,
 		RenderSpecFile: "generated-docker.yaml",
 	}
-	parameters := map[string]string{
+	parameters := map[string]interface{}{
 		"serviceName": "docker-is-great",
 	}
 	actualResponse := generatorlib.WriteRenderSpecWithValues(context.TODO(), request, name, parameters)
@@ -204,6 +204,8 @@ parameters:
 	require.Equal(t, expectedResponse, actualResponse)
 }
 
+// TODO test with a structured default value
+
 // --- error cases
 
 func TestWriteRenderSpecWithValues_ShouldComplainMissingSpec(t *testing.T) {
@@ -221,7 +223,8 @@ func TestWriteRenderSpecWithValues_ShouldComplainMissingSpec(t *testing.T) {
 		SourceBaseDir: sourcedirpath,
 		TargetBaseDir: targetdirpath,
 	}
-	actualResponse := generatorlib.WriteRenderSpecWithValues(context.TODO(), request, name, map[string]string{})
+	parameters := map[string]interface{}{}
+	actualResponse := generatorlib.WriteRenderSpecWithValues(context.TODO(), request, name, parameters)
 
 	docs.Then("the response reports an appropriate error")
 	expectedErrorMessagePart := "error reading generator spec file generator-notpresent.yaml: open ../resources/valid-generator-simple/generator-notpresent.yaml: "
@@ -247,7 +250,7 @@ func TestWriteRenderSpecWithValues_ShouldComplainTargetExistsIsDir(t *testing.T)
 		SourceBaseDir: sourcedirpath,
 		TargetBaseDir: targetdirpath,
 	}
-	parameters := map[string]string{
+	parameters := map[string]interface{}{
 		"serviceName": "docker-is-great",
 	}
 	actualResponse := generatorlib.WriteRenderSpecWithValues(context.TODO(), request, name, parameters)
@@ -273,7 +276,7 @@ func TestWriteRenderSpecWithValues_ShouldComplainMissingParameter(t *testing.T) 
 		SourceBaseDir: sourcedirpath,
 		TargetBaseDir: targetdirpath,
 	}
-	parameters := map[string]string{}
+	parameters := map[string]interface{}{}
 	actualResponse := generatorlib.WriteRenderSpecWithValues(context.TODO(), request, name, parameters)
 
 	docs.Then("the response reports an appropriate error")
@@ -297,7 +300,7 @@ func TestWriteRenderSpecWithValues_ShouldComplainUnknownParameter(t *testing.T) 
 		SourceBaseDir: sourcedirpath,
 		TargetBaseDir: targetdirpath,
 	}
-	parameters := map[string]string{
+	parameters := map[string]interface{}{
 		"serviceName":         "docker-is-great",
 		"somethingUnexpected": "huh, what's this",
 	}

@@ -26,7 +26,7 @@ type Api interface {
 	//
 	// Warning: if the file exists, it is silently overwritten! The idea is that you keep both your
 	// generators and the generator targets in source control, so you can then review the changes made.
-	WriteRenderSpecWithValues(ctx context.Context, request *Request, generatorName string, parameters map[string]string) *Response
+	WriteRenderSpecWithValues(ctx context.Context, request *Request, generatorName string, parameters map[string]interface{}) *Response
 
 	// Render files from templates according to RenderSpec and the GeneratorSpec it references.
 	//

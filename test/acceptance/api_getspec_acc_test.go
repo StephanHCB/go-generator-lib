@@ -33,13 +33,15 @@ func TestObtainGeneratorSpec_ShouldReturnCorrectSpec(t *testing.T) {
 			"serviceName": {
 				Description:       "The name of the service to be rendered",
 				ValidationPattern: "[a-zA-Z]+",
-				DefaultValue:      "",
 			},
 		},
 	}
 	require.Nil(t, err)
 	require.Equal(t, expected, actual)
 }
+
+// TODO test with a string default value
+// TODO test with a structured default value
 
 func TestObtainGeneratorSpec_ShouldFailOnMissingGeneratorFile(t *testing.T) {
 	docs.Given("a valid generator source directory")

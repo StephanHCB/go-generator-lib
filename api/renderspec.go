@@ -12,5 +12,5 @@ type RenderSpec struct {
 
 	// Assign variable "key" value "value". All values are evaluated as templates until they no longer change,
 	// so the value of one variable can refer to other variables, even if using their default values.
-	Parameters map[string]string `yaml:"parameters"`
+	Parameters map[string]interface{} `yaml:"parameters"`
 }
