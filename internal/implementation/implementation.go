@@ -47,7 +47,7 @@ func (i *GeneratorImpl) WriteRenderSpecWithDefaults(ctx context.Context, request
 	return i.successResponse(ctx, []api.FileResult{i.successFileResult(ctx, targetFile)})
 }
 
-func (i *GeneratorImpl) WriteRenderSpecWithValues(ctx context.Context, request *api.Request, generatorName string, parameters map[string]string) *api.Response {
+func (i *GeneratorImpl) WriteRenderSpecWithValues(ctx context.Context, request *api.Request, generatorName string, parameters map[string]interface{}) *api.Response {
 	sourceDir := generatordir.Instance(ctx, request.SourceBaseDir)
 	targetDir := targetdir.Instance(ctx, request.TargetBaseDir)
 
@@ -64,7 +64,7 @@ func (i *GeneratorImpl) WriteRenderSpecWithValues(ctx context.Context, request *
 	}
 
 	// check for extraneous parameters
-	for k, _ := range parameters {
+	for k := range parameters {
 		if _, ok := genSpec.Variables[k]; !ok {
 			return i.errorResponseToplevel(ctx, fmt.Errorf("parameter '%s' is not allowed according to generator spec", k))
 		}
@@ -107,20 +107,26 @@ func (i *GeneratorImpl) Render(ctx context.Context, request *api.Request) *api.R
 // helper functions
 
 func (i *GeneratorImpl) constructRenderSpecWithDefaults(ctx context.Context, generatorName string, genSpec *api.GeneratorSpec) *api.RenderSpec {
-	return i.constructRenderSpecWithValuesOrDefaults(ctx, generatorName, genSpec, map[string]string{})
+	return i.constructRenderSpecWithValuesOrDefaults(ctx, generatorName, genSpec, map[string]interface{}{})
 }
 
-func (i *GeneratorImpl) constructRenderSpecWithValuesOrDefaults(_ context.Context, generatorName string, genSpec *api.GeneratorSpec, parameters map[string]string) *api.RenderSpec {
+func (i *GeneratorImpl) constructRenderSpecWithValuesOrDefaults(_ context.Context, generatorName string, genSpec *api.GeneratorSpec, parameters map[string]interface{}) *api.RenderSpec {
 	renderSpec := &api.RenderSpec{
 		GeneratorName: generatorName,
-		Parameters:    map[string]string{},
+		Parameters:    map[string]interface{}{},
 	}
 	for k, v := range genSpec.Variables {
-		// a fetch on a map missing key will produce the empty value for that type
+		// a fetch on a map missing key will produce the empty value for that type, i.e. nil here
 		renderSpec.Parameters[k] = parameters[k]
-		if renderSpec.Parameters[k] == "" {
-			// again, the default may be the empty string
-			renderSpec.Parameters[k] = v.DefaultValue
+		if renderSpec.Parameters[k] == nil {
+			if v.DefaultValue == nil {
+				// for missing defaults, default to the empty string rather than nil to avoid all kinds of possible nil reference problems
+				// also, this makes the default spec entry be an empty string
+				renderSpec.Parameters[k] = ""
+			} else {
+				// again, the default may be the empty string
+				renderSpec.Parameters[k] = v.DefaultValue
+			}
 		}
 	}
 	return renderSpec
@@ -134,11 +140,11 @@ func (i *GeneratorImpl) constructAndValidateParameterMap(_ context.Context, genS
 			val = varSpec.DefaultValue
 		}
 
-		if val == "" {
+		if val == nil || fmt.Sprintf("%v", val) == "" {
 			return nil, fmt.Errorf("parameter '%s' is required but missing or empty", varName)
 		}
 		if varSpec.ValidationPattern != "" {
-			matches, err := regexp.MatchString(varSpec.ValidationPattern, val)
+			matches, err := regexp.MatchString(varSpec.ValidationPattern, fmt.Sprintf("%v", val))
 			if err != nil {
 				return nil, fmt.Errorf("variable declaration %s has invalid pattern (this is an error in the generator spec, not the render request): %s", varName, err.Error())
 			}

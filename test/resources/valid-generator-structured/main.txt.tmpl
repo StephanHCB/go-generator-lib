@@ -1,0 +1,6 @@
+imagine a {{ .structureMap.commonName }}
+
+then look up something in a list: {{ index .structureList 1 }}
+
+then look up something in a structure in a list: {{ (index .structureList 2).three }}
+(value is itself a list)

@@ -33,7 +33,57 @@ func TestObtainGeneratorSpec_ShouldReturnCorrectSpec(t *testing.T) {
 			"serviceName": {
 				Description:       "The name of the service to be rendered",
 				ValidationPattern: "[a-zA-Z]+",
-				DefaultValue:      "",
+			},
+		},
+	}
+	require.Nil(t, err)
+	require.Equal(t, expected, actual)
+}
+
+func TestObtainGeneratorSpec_ShouldReturnCorrectStructuredSpec(t *testing.T) {
+	docs.Given("a valid generator source directory")
+	sourcedir := "../resources/valid-generator-structured"
+
+	docs.Given("a valid generator name")
+	name := "main"
+
+	docs.When("ObtainGeneratorSpec is invoked")
+	actual, err := generatorlib.ObtainGeneratorSpec(context.TODO(), sourcedir, name)
+
+	docs.Then("the correct spec is returned")
+	expected := &api.GeneratorSpec{
+		Templates: []api.TemplateSpec{
+			{
+				RelativeSourcePath: "main.txt.tmpl",
+				RelativeTargetPath: "main.txt",
+				Condition:          "",
+				WithItems:          nil,
+			},
+		},
+		Variables: map[string]api.VariableSpec{
+			"helloMessage": {
+				Description:  "A message to be inserted in the code.",
+				DefaultValue: "hello world",
+			},
+			"structureList": {
+				Description:  "A structured parameter that is a list at top level",
+				DefaultValue: []interface{} {
+					"one",
+					"two",
+					map[interface{}]interface{} {
+						"three": []interface{}{
+							"sub 1",
+							"sub 2",
+						},
+					},
+				},
+			},
+			"structureMap": {
+				Description:  "A structured parameter that is a map at top level",
+				DefaultValue: map[interface{}]interface{} {
+					"species": "felis silvestris",
+					"commonName": "European wildcat",
+				},
 			},
 		},
 	}
