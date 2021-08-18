@@ -8,6 +8,7 @@ import (
 	"github.com/StephanHCB/go-generator-lib/internal/repository/targetdir"
 	"github.com/stretchr/testify/require"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -120,8 +121,9 @@ then look up something in a structure in a list: [sub 1 sub 2]
 	}
 	require.Equal(t, expectedResponse, actualResponse)
 	actual1, err := dir.ReadFile(context.TODO(), expectedFilename1)
+	actual1normalized := strings.ReplaceAll(string(actual1), "\r", "")
 	require.Nil(t, err)
-	require.Equal(t, expectedContent1, string(actual1))
+	require.Equal(t, expectedContent1, actual1normalized)
 }
 
 func TestRender_ShouldComplainIfRenderSpecNotFound(t *testing.T) {

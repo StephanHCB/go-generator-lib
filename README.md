@@ -174,7 +174,12 @@ func init() {
 Or you can provide your own implementation of `auloggingapi.LoggingImplementation` and assign it to
 `aulogging.Logger`.
 
-## Acceptance Tests (give you examples)
+## Build and test
+
+This library uses go modules. If cloned outside your GOPATH, you can build and test it using
+`go build ./...` and `go test ./...`. This will also download all required dependencies.
+
+### Acceptance Tests (give you examples)
 
 We have almost complete coverage with BDD-style 
 [acceptance tests](https://github.com/StephanHCB/go-generator-lib/tree/master/test/acceptance). 
