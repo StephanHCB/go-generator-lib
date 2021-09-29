@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Masterminds/sprig"
 	"github.com/StephanHCB/go-generator-lib/api"
 	"github.com/StephanHCB/go-generator-lib/internal/repository/generatordir"
 	"github.com/StephanHCB/go-generator-lib/internal/repository/targetdir"
@@ -175,7 +176,7 @@ func (i *GeneratorImpl) renderSingleTemplate(ctx context.Context, tplSpec *api.T
 		return []api.FileResult{i.errorFileResult(ctx, tplSpec.RelativeTargetPath, fmt.Errorf("failed to load template %s: %s", tplSpec.RelativeSourcePath, err))}, false
 	}
 
-	tmpl, err := template.New(templateName).Parse(string(templateContents))
+	tmpl, err := template.New(templateName).Funcs(sprig.TxtFuncMap()).Parse(string(templateContents))
 	if err != nil {
 		return []api.FileResult{i.errorFileResult(ctx, tplSpec.RelativeTargetPath, fmt.Errorf("failed to parse template %s: %s", tplSpec.RelativeSourcePath, err))}, false
 	}
@@ -243,7 +244,7 @@ func (i *GeneratorImpl) renderAndWriteFile(ctx context.Context, parameters map[s
 }
 
 func (i *GeneratorImpl) renderString(_ context.Context, parameters map[string]interface{}, templateName string, templateContents string) (string, error) {
-	tmpl, err := template.New(templateName).Parse(templateContents)
+	tmpl, err := template.New(templateName).Funcs(sprig.TxtFuncMap()).Parse(templateContents)
 	if err != nil {
 		return "", err
 	}

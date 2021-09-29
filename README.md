@@ -96,6 +96,18 @@ Assuming `someMap` is a map variable with a field `message`, access it as follow
 
 You can combine the two for structures with nested lists: `{{ (index .someList 0).someField }}`.
 
+### Additional Template Functions
+
+We include [Masterminds/sprig](https://github.com/Masterminds/sprig) when parsing any template,
+which offers a collection of useful template functions, so you can do stuff like
+
+```
+{{ .helloMessage | upper }}
+```
+
+Read the sprig documentation, it adds much of what you would otherwise miss compared to ansible
+j2 templates.
+
 ### Api for Generators
 
 Given a generator's path, you can ask this library for the list of available generator names using
@@ -178,6 +190,10 @@ Or you can provide your own implementation of `auloggingapi.LoggingImplementatio
 
 This library uses go modules. If cloned outside your GOPATH, you can build and test it using
 `go build ./...` and `go test ./...`. This will also download all required dependencies.
+
+We release automatically using 
+[semantic-release](https://github.com/semantic-release/semantic-release/).
+Please form your commit messages accordingly.
 
 ### Acceptance Tests (give you examples)
 
