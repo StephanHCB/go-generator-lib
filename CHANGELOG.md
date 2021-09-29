@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/StephanHCB/go-generator-lib/compare/v1.1.0...v1.2.0) (2021-09-29)
+
+
+### Features
+
+* **#7:** parse default values as a template when writing spec and rendering ([1f5e2e9](https://github.com/StephanHCB/go-generator-lib/commit/1f5e2e94d4924c9041583047cd879ed74baa3653)), closes [#7](https://github.com/StephanHCB/go-generator-lib/issues/7)
+
 # [1.1.0](https://github.com/StephanHCB/go-generator-lib/compare/v1.0.0...v1.1.0) (2021-09-29)
 
 
