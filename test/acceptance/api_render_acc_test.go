@@ -75,10 +75,10 @@ func main() {
 	require.Equal(t, expectedResponse, actualResponse)
 	actual1, err := dir.ReadFile(context.TODO(), expectedFilename1)
 	require.Nil(t, err)
-	require.Equal(t, expectedContent1, string(actual1))
+	require.Equal(t, toUnix(expectedContent1), toUnix(string(actual1)))
 	actual2, err := dir.ReadFile(context.TODO(), expectedFilename2)
 	require.Nil(t, err)
-	require.Equal(t, expectedContent2, string(actual2))
+	require.Equal(t, toUnix(expectedContent2), toUnix(string(actual2)))
 }
 
 func TestRender_ShouldWriteExpectedFilesForStructured(t *testing.T) {
@@ -512,4 +512,83 @@ parameters: {}
 	require.Equal(t, "error evaluating template for target '' for item #1: open ../output/render-12: is a directory", actualResponse.RenderedFiles[0].Errors[0].Error())
 	require.False(t, actualResponse.RenderedFiles[1].Success)
 	require.Equal(t, "error evaluating template for target '': open ../output/render-12: is a directory", actualResponse.RenderedFiles[1].Errors[0].Error())
+}
+
+func TestRender_ShouldWriteExpectedFilesForTemplatedDefault(t *testing.T) {
+	docs.Given("a valid generator source directory and a valid target directory")
+	sourcedirpath := "../resources/valid-generator-simple"
+	targetdirpath := "../output/render-13"
+	require.Nil(t, os.RemoveAll(targetdirpath))
+	require.Nil(t, os.Mkdir(targetdirpath, 0755))
+
+	docs.Given("a valid render spec file for generator templatevars")
+	renderspec := `generator: templatevars
+parameters:
+  serviceName: 'temp-service'
+`
+	dir := targetdir.Instance(context.TODO(), targetdirpath)
+	require.Nil(t, dir.WriteFile(context.TODO(), "generated-templatevars.yaml", []byte(renderspec)))
+
+	docs.When("Render is invoked")
+	request := &api.Request{
+		SourceBaseDir: sourcedirpath,
+		TargetBaseDir: targetdirpath,
+		RenderSpecFile: "generated-templatevars.yaml",
+	}
+	actualResponse := generatorlib.Render(context.TODO(), request)
+
+	docs.Then("the return value is as expected and the correct files are written")
+	expectedFilename1 := "sub/orig.go.txt"
+	expectedContent1 := `package sub
+
+import "fmt"
+
+func PrintMessage() {
+	fmt.Println("heya")
+}
+`
+	expectedResponse := &api.Response{
+		Success: true,
+		RenderedFiles: []api.FileResult{
+			{
+				Success:          true,
+				RelativeFilePath: expectedFilename1,
+			},
+		},
+	}
+	require.Equal(t, expectedResponse, actualResponse)
+	actual1, err := dir.ReadFile(context.TODO(), expectedFilename1)
+	require.Nil(t, err)
+	require.Equal(t, toUnix(expectedContent1), toUnix(string(actual1)))
+}
+
+func TestRender_ShouldComplainIfSyntaxErrorInTemplatedDefault(t *testing.T) {
+	docs.Given("a valid generator source directory and a valid target directory")
+	sourcedirpath := "../resources/invalid-generator-specs"
+	targetdirpath := "../output/render-14"
+	require.Nil(t, os.RemoveAll(targetdirpath))
+	require.Nil(t, os.Mkdir(targetdirpath, 0755))
+
+	docs.Given("a valid render spec file with a syntax error in a templated default")
+	renderspec := `generator: templatevars
+parameters:
+  serviceName: 'temp-service'
+`
+	dir := targetdir.Instance(context.TODO(), targetdirpath)
+	require.Nil(t, dir.WriteFile(context.TODO(), "generated-templatevars.yaml", []byte(renderspec)))
+
+	docs.When("Render is invoked")
+	request := &api.Request{
+		SourceBaseDir: sourcedirpath,
+		TargetBaseDir: targetdirpath,
+		RenderSpecFile: "generated-templatevars.yaml",
+	}
+	actualResponse := generatorlib.Render(context.TODO(), request)
+
+	docs.Then("the return value is as expected and contains the correct error message")
+	require.False(t, actualResponse.Success)
+	require.Empty(t, actualResponse.RenderedFiles)
+	require.Equal(t, 1, len(actualResponse.Errors))
+	expectedErrorPart := "variable declaration helloMessage has invalid default (this is an error in the generator spec): template: __defaultvalue_helloMessage:1:"
+	require.Contains(t, actualResponse.Errors[0].Error(), expectedErrorPart)
 }

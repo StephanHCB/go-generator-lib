@@ -36,7 +36,7 @@ variables:
     pattern: '^[a-z-]+$'
   helloMessage:
     description: 'A message to be inserted in the code.'
-    default: 'hello world'
+    default: 'hello {{ "world" }}'
 ```
 
 This defines templates like `src/sub/sub.go.tmpl` and `src/main.go.tmpl` and what target path
@@ -44,6 +44,7 @@ they'll be rendered to in the target directory.
 It also specifies which parameter variables will be available during rendering.
 
   * If a variable does not have a default value, it is a required parameter.
+  * default values are evaluated as templates, too, but you will not be able to refer to other variables  
   * if a variable has a pattern set, the parameter value must regex-match that pattern. Please be advised that
     you must enclose the pattern with ^...$ if you want to force the whole value to match, otherwise
     it's enough for part of the value to match the pattern.

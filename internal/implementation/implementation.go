@@ -36,7 +36,10 @@ func (i *GeneratorImpl) WriteRenderSpecWithDefaults(ctx context.Context, request
 		return i.errorResponseToplevel(ctx, err)
 	}
 
-	renderSpec := i.constructRenderSpecWithDefaults(ctx, generatorName, genSpec)
+	renderSpec, err := i.constructRenderSpecWithDefaults(ctx, generatorName, genSpec)
+	if err != nil {
+		return i.errorResponseToplevel(ctx, err)
+	}
 
 	// no validation here because the defaults may be empty or may intentionally not match the validation rule
 	// (might be something like 'put in your fqdn name here')
@@ -57,7 +60,10 @@ func (i *GeneratorImpl) WriteRenderSpecWithValues(ctx context.Context, request *
 		return i.errorResponseToplevel(ctx, err)
 	}
 
-	renderSpec := i.constructRenderSpecWithValuesOrDefaults(ctx, generatorName, genSpec, parameters)
+	renderSpec, err := i.constructRenderSpecWithValuesOrDefaults(ctx, generatorName, genSpec, parameters)
+	if err != nil {
+		return i.errorResponseToplevel(ctx, err)
+	}
 
 	_, err = i.constructAndValidateParameterMap(ctx, genSpec, renderSpec)
 	if err != nil {
@@ -107,11 +113,11 @@ func (i *GeneratorImpl) Render(ctx context.Context, request *api.Request) *api.R
 
 // helper functions
 
-func (i *GeneratorImpl) constructRenderSpecWithDefaults(ctx context.Context, generatorName string, genSpec *api.GeneratorSpec) *api.RenderSpec {
+func (i *GeneratorImpl) constructRenderSpecWithDefaults(ctx context.Context, generatorName string, genSpec *api.GeneratorSpec) (*api.RenderSpec, error) {
 	return i.constructRenderSpecWithValuesOrDefaults(ctx, generatorName, genSpec, map[string]interface{}{})
 }
 
-func (i *GeneratorImpl) constructRenderSpecWithValuesOrDefaults(_ context.Context, generatorName string, genSpec *api.GeneratorSpec, parameters map[string]interface{}) *api.RenderSpec {
+func (i *GeneratorImpl) constructRenderSpecWithValuesOrDefaults(_ context.Context, generatorName string, genSpec *api.GeneratorSpec, parameters map[string]interface{}) (*api.RenderSpec, error) {
 	renderSpec := &api.RenderSpec{
 		GeneratorName: generatorName,
 		Parameters:    map[string]interface{}{},
@@ -124,13 +130,38 @@ func (i *GeneratorImpl) constructRenderSpecWithValuesOrDefaults(_ context.Contex
 				// for missing defaults, default to the empty string rather than nil to avoid all kinds of possible nil reference problems
 				// also, this makes the default spec entry be an empty string
 				renderSpec.Parameters[k] = ""
-			} else {
+			} else if defaultStr, ok := v.DefaultValue.(string); ok {
 				// again, the default may be the empty string
+				renderedDefaultValue, err := i.renderStringDefaultFromTemplate(k, defaultStr)
+				if err != nil {
+					return nil, err
+				}
+
+				renderSpec.Parameters[k] = renderedDefaultValue
+			} else {
+				// structured type
 				renderSpec.Parameters[k] = v.DefaultValue
 			}
 		}
 	}
-	return renderSpec
+	return renderSpec, nil
+}
+
+func (i *GeneratorImpl) renderStringDefaultFromTemplate(variableName string, defaultStr string) (interface{}, error) {
+	templateName := "__defaultvalue_" + variableName
+	tmpl, err := template.New(templateName).Funcs(sprig.TxtFuncMap()).Parse(defaultStr)
+	if err != nil {
+		return nil, fmt.Errorf("variable declaration %s has invalid default (this is an error in the generator spec): %s", variableName, err.Error())
+	}
+
+	var buf bytes.Buffer
+	err = tmpl.ExecuteTemplate(&buf, templateName, map[string]interface{}{})
+	if err != nil {
+		// unsure if this is reachable. All errors I've been able to produce are found during template parse
+		return nil, fmt.Errorf("variable declaration %s has invalid default (this is an error in the generator spec): %s", variableName, err.Error())
+	}
+
+	return buf.String(), nil
 }
 
 func (i *GeneratorImpl) constructAndValidateParameterMap(_ context.Context, genSpec *api.GeneratorSpec, renderSpec *api.RenderSpec) (map[string]interface{}, error) {
@@ -138,7 +169,16 @@ func (i *GeneratorImpl) constructAndValidateParameterMap(_ context.Context, genS
 	for varName, varSpec := range genSpec.Variables {
 		val, ok := renderSpec.Parameters[varName]
 		if !ok {
-			val = varSpec.DefaultValue
+			if defaultStr, ok := varSpec.DefaultValue.(string); ok {
+				renderedDefaultValue, err := i.renderStringDefaultFromTemplate(varName, defaultStr)
+				if err != nil {
+					return nil, err
+				}
+
+				val = renderedDefaultValue
+			} else {
+				val = varSpec.DefaultValue
+			}
 		}
 
 		if val == nil || fmt.Sprintf("%v", val) == "" {
