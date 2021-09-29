@@ -1,0 +1,7 @@
+templates:
+  - source: 'item.txt.tmpl'
+    target: 'item.txt'
+variables:
+  helloMessage:
+    description: 'A message to be inserted in the code, but the template has a syntax error.'
+    default: '{{ "hi" | upper '

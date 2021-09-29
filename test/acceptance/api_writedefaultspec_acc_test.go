@@ -147,3 +147,69 @@ func TestWriteRenderSpecWithDefaults_ShouldComplainTargetExistsIsDir(t *testing.
 	require.False(t, actualResponse.Success)
 	require.Equal(t, expectedErrorMessage, actualResponse.Errors[0].Error())
 }
+
+func TestWriteRenderSpecWithDefaults_ShouldCreateParsedDefaultsSpec(t *testing.T) {
+	docs.Given("a valid generator source directory and a valid target directory")
+	sourcedirpath := "../resources/valid-generator-simple"
+	targetdirpath := "../output/write-render-spec-5"
+	require.Nil(t, os.RemoveAll(targetdirpath))
+	require.Nil(t, os.Mkdir(targetdirpath, 0755))
+
+	docs.Given("a valid generator name")
+	name := "templatevars"
+
+	request := &api.Request{
+		SourceBaseDir: sourcedirpath,
+		TargetBaseDir: targetdirpath,
+	}
+	docs.When("WriteRenderSpecWithDefaults is invoked")
+	actualResponse := generatorlib.WriteRenderSpecWithDefaults(context.TODO(), request, name)
+
+	docs.Then("the correct spec file is written and the return value is as expected")
+	expectedFilename := "generated-templatevars.yaml"
+	expectedContent := `generator: templatevars
+parameters:
+  helloMessage: heya
+  serviceName: ""
+  serviceUrl: github.com/StephanHCB/temp
+`
+	expectedResponse := &api.Response{
+		Success: true,
+		RenderedFiles: []api.FileResult{
+			{
+				Success:          true,
+				RelativeFilePath: expectedFilename,
+			},
+		},
+	}
+	dir := targetdir.Instance(context.TODO(), targetdirpath)
+	actual, err := dir.ReadFile(context.TODO(), expectedFilename)
+	require.Nil(t, err)
+	require.Equal(t, expectedContent, string(actual))
+	require.Equal(t, expectedResponse, actualResponse)
+}
+
+func TestWriteRenderSpecWithDefaults_ShouldComplainAboutInvalidTemplatesInDefaults(t *testing.T) {
+	docs.Given("a valid generator source directory and a valid target directory")
+	sourcedirpath := "../resources/invalid-generator-specs"
+	targetdirpath := "../output/write-render-spec-6"
+	require.Nil(t, os.RemoveAll(targetdirpath))
+	require.Nil(t, os.Mkdir(targetdirpath, 0755))
+
+	docs.Given("a valid generator name, but the generator spec contains a template syntax error in a default value")
+	name := "templatevars"
+
+	request := &api.Request{
+		SourceBaseDir: sourcedirpath,
+		TargetBaseDir: targetdirpath,
+	}
+	docs.When("WriteRenderSpecWithDefaults is invoked")
+	actualResponse := generatorlib.WriteRenderSpecWithDefaults(context.TODO(), request, name)
+
+	docs.Then("no spec file is written and the return value is as expected")
+	require.False(t, actualResponse.Success)
+	require.Nil(t, actualResponse.RenderedFiles)
+	require.Equal(t, 1, len(actualResponse.Errors))
+	expectedError := "variable declaration helloMessage has invalid default (this is an error in the generator spec): template: __defaultvalue_helloMessage:1: "
+	require.Contains(t, actualResponse.Errors[0].Error(), expectedError)
+}
