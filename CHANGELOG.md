@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/StephanHCB/go-generator-lib/compare/v1.0.0...v1.1.0) (2021-09-29)
+
+
+### Features
+
+* **#6:** include Masterminds/sprig for all templates ([305acf2](https://github.com/StephanHCB/go-generator-lib/commit/305acf29932a245703eda2b53f9b09497142bdf8)), closes [#6](https://github.com/StephanHCB/go-generator-lib/issues/6)
+
 # [1.0.0](https://github.com/StephanHCB/go-generator-lib/compare/v0.3.0...v1.0.0) (2021-09-29)
 
 
