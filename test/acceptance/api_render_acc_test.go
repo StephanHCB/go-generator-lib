@@ -43,7 +43,7 @@ parameters:
 import "fmt"
 
 func PrintMessage() {
-	fmt.Println("hello world")
+	fmt.Println("HELLO WORLD")
 }
 `
 	expectedFilename2 := "main.go.txt"
