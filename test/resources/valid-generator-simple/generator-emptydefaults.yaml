@@ -1,0 +1,9 @@
+templates:
+  - source: 'src/strings.tmpl'
+    target: 'strings.txt'
+variables:
+  emptyStringDefault:
+    description: 'A variable with an empty string as default.'
+    default: ''
+  missingDefault:
+    description: 'A variable with no default.'

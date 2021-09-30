@@ -36,7 +36,9 @@ func (i *GeneratorImpl) WriteRenderSpecWithDefaults(ctx context.Context, request
 		return i.errorResponseToplevel(ctx, err)
 	}
 
-	renderSpec, err := i.constructRenderSpecWithDefaults(ctx, generatorName, genSpec)
+	// for missing default values, default to the empty string rather than nil
+	// this makes the spec entry be an empty string, resulting in a valid render spec
+	renderSpec, err := i.constructRenderSpecWithValuesOrDefaults(ctx, generatorName, genSpec, map[string]interface{}{}, "")
 	if err != nil {
 		return i.errorResponseToplevel(ctx, err)
 	}
@@ -60,7 +62,9 @@ func (i *GeneratorImpl) WriteRenderSpecWithValues(ctx context.Context, request *
 		return i.errorResponseToplevel(ctx, err)
 	}
 
-	renderSpec, err := i.constructRenderSpecWithValuesOrDefaults(ctx, generatorName, genSpec, parameters)
+	// when the user is providing a set of values for the parameter, we want missing parameter values to be reported as missing
+	// therefore, actually set the nilDefault to nil
+	renderSpec, err := i.constructRenderSpecWithValuesOrDefaults(ctx, generatorName, genSpec, parameters, nil)
 	if err != nil {
 		return i.errorResponseToplevel(ctx, err)
 	}
@@ -113,11 +117,7 @@ func (i *GeneratorImpl) Render(ctx context.Context, request *api.Request) *api.R
 
 // helper functions
 
-func (i *GeneratorImpl) constructRenderSpecWithDefaults(ctx context.Context, generatorName string, genSpec *api.GeneratorSpec) (*api.RenderSpec, error) {
-	return i.constructRenderSpecWithValuesOrDefaults(ctx, generatorName, genSpec, map[string]interface{}{})
-}
-
-func (i *GeneratorImpl) constructRenderSpecWithValuesOrDefaults(_ context.Context, generatorName string, genSpec *api.GeneratorSpec, parameters map[string]interface{}) (*api.RenderSpec, error) {
+func (i *GeneratorImpl) constructRenderSpecWithValuesOrDefaults(_ context.Context, generatorName string, genSpec *api.GeneratorSpec, parameters map[string]interface{}, nilDefault interface{}) (*api.RenderSpec, error) {
 	renderSpec := &api.RenderSpec{
 		GeneratorName: generatorName,
 		Parameters:    map[string]interface{}{},
@@ -127,9 +127,7 @@ func (i *GeneratorImpl) constructRenderSpecWithValuesOrDefaults(_ context.Contex
 		renderSpec.Parameters[k] = parameters[k]
 		if renderSpec.Parameters[k] == nil {
 			if v.DefaultValue == nil {
-				// for missing defaults, default to the empty string rather than nil to avoid all kinds of possible nil reference problems
-				// also, this makes the default spec entry be an empty string
-				renderSpec.Parameters[k] = ""
+				renderSpec.Parameters[k] = nilDefault
 			} else if defaultStr, ok := v.DefaultValue.(string); ok {
 				// again, the default may be the empty string
 				renderedDefaultValue, err := i.renderStringDefaultFromTemplate(k, defaultStr)
@@ -181,8 +179,8 @@ func (i *GeneratorImpl) constructAndValidateParameterMap(_ context.Context, genS
 			}
 		}
 
-		if val == nil || fmt.Sprintf("%v", val) == "" {
-			return nil, fmt.Errorf("parameter '%s' is required but missing or empty", varName)
+		if val == nil {
+			return nil, fmt.Errorf("parameter '%s' is required but missing", varName)
 		}
 		if varSpec.ValidationPattern != "" {
 			matches, err := regexp.MatchString(varSpec.ValidationPattern, fmt.Sprintf("%v", val))
