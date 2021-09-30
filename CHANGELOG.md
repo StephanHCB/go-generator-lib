@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/StephanHCB/go-generator-lib/compare/v1.2.0...v1.3.0) (2021-09-30)
+
+
+### Features
+
+* **#8:** correctly handle empty string defaults vs. missing defaults - implements [#8](https://github.com/StephanHCB/go-generator-lib/issues/8) ([27ae46d](https://github.com/StephanHCB/go-generator-lib/commit/27ae46d25755226eb93811e36ec6d95936c1b1ef))
+
 # [1.2.0](https://github.com/StephanHCB/go-generator-lib/compare/v1.1.0...v1.2.0) (2021-09-29)
 
 
