@@ -2,6 +2,7 @@ package acceptance
 
 import (
 	"context"
+	"fmt"
 	generatorlib "github.com/StephanHCB/go-generator-lib"
 	"github.com/StephanHCB/go-generator-lib/api"
 	"github.com/StephanHCB/go-generator-lib/docs"
@@ -367,7 +368,7 @@ parameters:
 	docs.Then("appropriate validation errors are returned")
 	require.False(t, actualResponse.Success)
 	require.Empty(t, actualResponse.RenderedFiles)
-	require.Equal(t, "parameter 'serviceName' is required but missing or empty", actualResponse.Errors[0].Error())
+	require.Equal(t, "parameter 'serviceName' is required but missing", actualResponse.Errors[0].Error())
 }
 
 func TestRender_ShouldComplainIfInvalidPattern(t *testing.T) {
@@ -591,4 +592,101 @@ parameters:
 	require.Equal(t, 1, len(actualResponse.Errors))
 	expectedErrorPart := "variable declaration helloMessage has invalid default (this is an error in the generator spec): template: __defaultvalue_helloMessage:1:"
 	require.Contains(t, actualResponse.Errors[0].Error(), expectedErrorPart)
+}
+
+func _testRender_emptyDefaultsSuccessTestCase(t *testing.T, testcase uint, renderspec string) {
+	docs.Given("a valid generator source directory and a valid target directory")
+	sourcedirpath := "../resources/valid-generator-simple"
+	targetdirpath := fmt.Sprintf("../output/render-%d", testcase)
+	require.Nil(t, os.RemoveAll(targetdirpath))
+	require.Nil(t, os.Mkdir(targetdirpath, 0755))
+
+	docs.Given("a valid render spec file for generator emptydefaults")
+	dir := targetdir.Instance(context.TODO(), targetdirpath)
+	require.Nil(t, dir.WriteFile(context.TODO(), "generated-emptydefaults.yaml", []byte(renderspec)))
+
+	docs.When("Render is invoked")
+	request := &api.Request{
+		SourceBaseDir: sourcedirpath,
+		TargetBaseDir: targetdirpath,
+		RenderSpecFile: "generated-emptydefaults.yaml",
+	}
+	actualResponse := generatorlib.Render(context.TODO(), request)
+
+	docs.Then("the return value is as expected and the correct files are written")
+	expectedFilename1 := "strings.txt"
+	expectedContent1 := `emptyStringDefault: ##
+missingDefault: ##
+`
+	expectedResponse := &api.Response{
+		Success: true,
+		RenderedFiles: []api.FileResult{
+			{
+				Success:          true,
+				RelativeFilePath: expectedFilename1,
+			},
+		},
+	}
+	require.Equal(t, expectedResponse, actualResponse)
+	actual1, err := dir.ReadFile(context.TODO(), expectedFilename1)
+	require.Nil(t, err)
+	require.Equal(t, toUnix(expectedContent1), toUnix(string(actual1)))
+}
+
+func TestRender_ShouldWriteExpectedForEmptyDefaultsBothSet(t *testing.T) {
+	renderspec := `generator: emptydefaults
+parameters:
+  emptyStringDefault: ''
+  missingDefault: ''
+`
+	_testRender_emptyDefaultsSuccessTestCase(t, 15, renderspec)
+}
+
+func TestRender_ShouldWriteExpectedForEmptyDefaultsMissingSet(t *testing.T) {
+	renderspec := `generator: emptydefaults
+parameters:
+  missingDefault: ''
+`
+	_testRender_emptyDefaultsSuccessTestCase(t, 16, renderspec)
+}
+
+func _testRender_emptyDefaultsErrorTestCase(t *testing.T, testcase uint, renderspec string, expectedContainedInErr string) {
+	docs.Given("a valid generator source directory and a valid target directory")
+	sourcedirpath := "../resources/valid-generator-simple"
+	targetdirpath := fmt.Sprintf("../output/render-%d", testcase)
+	require.Nil(t, os.RemoveAll(targetdirpath))
+	require.Nil(t, os.Mkdir(targetdirpath, 0755))
+
+	docs.Given("a valid render spec file for generator emptydefaults")
+	dir := targetdir.Instance(context.TODO(), targetdirpath)
+	require.Nil(t, dir.WriteFile(context.TODO(), "generated-emptydefaults.yaml", []byte(renderspec)))
+
+	docs.When("Render is invoked")
+	request := &api.Request{
+		SourceBaseDir: sourcedirpath,
+		TargetBaseDir: targetdirpath,
+		RenderSpecFile: "generated-emptydefaults.yaml",
+	}
+	actualResponse := generatorlib.Render(context.TODO(), request)
+
+	docs.Then("the return value is as expected and the correct error is raised")
+	require.False(t, actualResponse.Success)
+	require.Empty(t, actualResponse.RenderedFiles)
+	require.Equal(t, 1, len(actualResponse.Errors))
+	require.Contains(t, actualResponse.Errors[0].Error(), expectedContainedInErr)
+}
+
+func TestRender_ShouldWriteExpectedForEmptyDefaultsNoneSet(t *testing.T) {
+	renderspec := `generator: emptydefaults
+parameters: {}
+`
+	_testRender_emptyDefaultsErrorTestCase(t, 17, renderspec, "parameter 'missingDefault' is required but missing")
+}
+
+func TestRender_ShouldWriteExpectedForEmptyDefaultsEmptyStringSet(t *testing.T) {
+	renderspec := `generator: emptydefaults
+parameters:
+  emptyStringDefault: ''
+`
+	_testRender_emptyDefaultsErrorTestCase(t, 18, renderspec, "parameter 'missingDefault' is required but missing")
 }

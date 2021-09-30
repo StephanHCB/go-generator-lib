@@ -213,3 +213,43 @@ func TestWriteRenderSpecWithDefaults_ShouldComplainAboutInvalidTemplatesInDefaul
 	expectedError := "variable declaration helloMessage has invalid default (this is an error in the generator spec): template: __defaultvalue_helloMessage:1: "
 	require.Contains(t, actualResponse.Errors[0].Error(), expectedError)
 }
+
+func TestWriteRenderSpecWithDefaults_ShouldCreateEmptyStringBothCases(t *testing.T) {
+	docs.Given("a valid generator source directory and a valid target directory")
+	sourcedirpath := "../resources/valid-generator-simple"
+	targetdirpath := "../output/write-render-spec-7"
+	require.Nil(t, os.RemoveAll(targetdirpath))
+	require.Nil(t, os.Mkdir(targetdirpath, 0755))
+
+	docs.Given("a valid generator name")
+	name := "emptydefaults"
+
+	request := &api.Request{
+		SourceBaseDir: sourcedirpath,
+		TargetBaseDir: targetdirpath,
+	}
+	docs.When("WriteRenderSpecWithDefaults is invoked")
+	actualResponse := generatorlib.WriteRenderSpecWithDefaults(context.TODO(), request, name)
+
+	docs.Then("the correct spec file is written and the return value is as expected")
+	expectedFilename := "generated-emptydefaults.yaml"
+	expectedContent := `generator: emptydefaults
+parameters:
+  emptyStringDefault: ""
+  missingDefault: ""
+`
+	expectedResponse := &api.Response{
+		Success: true,
+		RenderedFiles: []api.FileResult{
+			{
+				Success:          true,
+				RelativeFilePath: expectedFilename,
+			},
+		},
+	}
+	dir := targetdir.Instance(context.TODO(), targetdirpath)
+	actual, err := dir.ReadFile(context.TODO(), expectedFilename)
+	require.Nil(t, err)
+	require.Equal(t, expectedContent, string(actual))
+	require.Equal(t, expectedResponse, actualResponse)
+}

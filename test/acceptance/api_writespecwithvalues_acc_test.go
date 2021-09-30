@@ -381,7 +381,7 @@ func TestWriteRenderSpecWithValues_ShouldComplainMissingParameter(t *testing.T) 
 	actualResponse := generatorlib.WriteRenderSpecWithValues(context.TODO(), request, name, parameters)
 
 	docs.Then("the response reports an appropriate error")
-	expectedErrorMessage := "parameter 'serviceName' is required but missing or empty"
+	expectedErrorMessage := "parameter 'serviceName' is required but missing"
 	require.False(t, actualResponse.Success)
 	require.Equal(t, expectedErrorMessage, actualResponse.Errors[0].Error())
 }
