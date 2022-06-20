@@ -23,6 +23,7 @@ type TemplateSpec struct {
 	RelativeTargetPath string        `yaml:"target"`
 	Condition          string        `yaml:"condition"`
 	WithItems          []interface{} `yaml:"with_items"`
+	JustCopy           bool          `yaml:"just_copy"`
 }
 
 // Specifies a variable that this generator uses, so it is made available in the templates.

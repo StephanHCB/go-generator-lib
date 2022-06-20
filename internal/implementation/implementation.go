@@ -107,7 +107,7 @@ func (i *GeneratorImpl) Render(ctx context.Context, request *api.Request) *api.R
 		return i.errorResponseToplevel(ctx, err)
 	}
 
-	renderedFiles, allSuccessful := i.renderAllTemplates(ctx, genSpec, parameters, sourceDir, targetDir)
+	renderedFiles, allSuccessful := i.renderAll(ctx, genSpec, parameters, sourceDir, targetDir)
 	if allSuccessful {
 		return i.successResponse(ctx, renderedFiles)
 	} else {
@@ -196,15 +196,36 @@ func (i *GeneratorImpl) constructAndValidateParameterMap(_ context.Context, genS
 	return parameters, nil
 }
 
-func (i *GeneratorImpl) renderAllTemplates(ctx context.Context, genSpec *api.GeneratorSpec, parameters map[string]interface{}, sourceDir *generatordir.GeneratorDirectory, targetDir *targetdir.TargetDirectory) ([]api.FileResult, bool) {
-	renderedFiles := []api.FileResult{}
+func (i *GeneratorImpl) renderAll(ctx context.Context, genSpec *api.GeneratorSpec, parameters map[string]interface{}, sourceDir *generatordir.GeneratorDirectory, targetDir *targetdir.TargetDirectory) ([]api.FileResult, bool) {
+	var renderedFiles []api.FileResult
 	allSuccessful := true
 	for _, tplSpec := range genSpec.Templates {
-		rendered, success := i.renderSingleTemplate(ctx, &tplSpec, parameters, sourceDir, targetDir)
+		rendered, success := i.renderOne(ctx, &tplSpec, parameters, sourceDir, targetDir)
 		renderedFiles = append(renderedFiles, rendered...)
 		allSuccessful = allSuccessful && success
 	}
 	return renderedFiles, allSuccessful
+}
+
+func (i *GeneratorImpl) renderOne(ctx context.Context, tplSpec *api.TemplateSpec, parameters map[string]interface{}, sourceDir *generatordir.GeneratorDirectory, targetDir *targetdir.TargetDirectory) ([]api.FileResult, bool) {
+	if tplSpec.JustCopy {
+		return i.renderSingleFile(ctx, tplSpec, parameters, sourceDir, targetDir)
+	} else {
+		return i.renderSingleTemplate(ctx, tplSpec, parameters, sourceDir, targetDir)
+	}
+}
+
+func (i *GeneratorImpl) renderSingleFile(ctx context.Context, tplSpec *api.TemplateSpec, parameters map[string]interface{}, sourceDir *generatordir.GeneratorDirectory, targetDir *targetdir.TargetDirectory) ([]api.FileResult, bool) {
+	templateContents, err := sourceDir.ReadFile(ctx, tplSpec.RelativeSourcePath)
+	if err != nil {
+		return []api.FileResult{i.errorFileResult(ctx, tplSpec.RelativeTargetPath, fmt.Errorf("failed to load template %s: %s", tplSpec.RelativeSourcePath, err))}, false
+	}
+
+	err = targetDir.WriteFile(ctx, tplSpec.RelativeTargetPath, templateContents)
+	if err != nil {
+		return []api.FileResult{i.errorFileResult(ctx, tplSpec.RelativeTargetPath, fmt.Errorf("failed to copy file  %s: %s", tplSpec.RelativeSourcePath, err))}, false
+	}
+	return []api.FileResult{i.successFileResult(ctx, tplSpec.RelativeTargetPath)}, true
 }
 
 func (i *GeneratorImpl) renderSingleTemplate(ctx context.Context, tplSpec *api.TemplateSpec, parameters map[string]interface{}, sourceDir *generatordir.GeneratorDirectory, targetDir *targetdir.TargetDirectory) ([]api.FileResult, bool) {

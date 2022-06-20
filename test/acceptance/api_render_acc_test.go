@@ -2,6 +2,7 @@ package acceptance
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	generatorlib "github.com/StephanHCB/go-generator-lib"
 	"github.com/StephanHCB/go-generator-lib/api"
@@ -127,6 +128,68 @@ then look up something in a structure in a list: [sub 1 sub 2]
 	require.Equal(t, expectedContent1, actual1normalized)
 }
 
+func TestRender_ShouldWriteExpectedFilesForJustCopy(t *testing.T) {
+	docs.Given("a valid generator source directory and a valid target directory")
+	sourcedirpath := "../resources/valid-generator-simple"
+	targetdirpath := "../output/render-1b"
+	require.Nil(t, os.RemoveAll(targetdirpath))
+	require.Nil(t, os.Mkdir(targetdirpath, 0755))
+
+	docs.Given("a valid render spec file for generator justcopy")
+	renderspec := `generator: justcopy
+parameters:
+  helloMessage: hello world
+`
+	dir := targetdir.Instance(context.TODO(), targetdirpath)
+	require.Nil(t, dir.WriteFile(context.TODO(), "generated-justcopy.yaml", []byte(renderspec)))
+
+	docs.When("Render is invoked")
+	request := &api.Request{
+		SourceBaseDir:  sourcedirpath,
+		TargetBaseDir:  targetdirpath,
+		RenderSpecFile: "generated-justcopy.yaml",
+	}
+	actualResponse := generatorlib.Render(context.TODO(), request)
+
+	docs.Then("the return value is as expected and the correct files without really templating are written")
+	expectedFilename1 := "sub/sub.go.txt"
+	expectedContent1 := `package sub
+
+import "fmt"
+
+func PrintMessage() {
+	fmt.Println("{{ .helloMessage | upper }}")
+}
+`
+	expectedFilename2 := "sub/unknown.txt"
+	expectedFilename3 := "<nil>"
+
+	expectedResponse := &api.Response{
+		Success: false,
+		RenderedFiles: []api.FileResult{
+			{
+				Success:          true,
+				RelativeFilePath: expectedFilename1,
+			},
+			{
+				Success:          false,
+				RelativeFilePath: expectedFilename2,
+				Errors:           []error{errors.New("failed to load template src/sub/unknown.tmpl: open ../resources/valid-generator-simple/src/sub/unknown.tmpl: The system cannot find the file specified.")},
+			},
+			{
+				Success:          false,
+				RelativeFilePath: expectedFilename3,
+				Errors:           []error{errors.New("failed to copy file  src/sub/orig.go.tmpl: open ../output/render-1b/<nil>: The filename, directory name, or volume label syntax is incorrect.")},
+			},
+		},
+		Errors: []error{errors.New("an error occurred during rendering, see individual files")},
+	}
+	require.Equal(t, expectedResponse, actualResponse)
+	actual1, err := dir.ReadFile(context.TODO(), expectedFilename1)
+	require.Nil(t, err)
+	require.Equal(t, toUnix(expectedContent1), toUnix(string(actual1)))
+}
+
 func TestRender_ShouldComplainIfRenderSpecNotFound(t *testing.T) {
 	docs.Given("a valid generator source directory and a valid target directory")
 	sourcedirpath := "../resources/valid-generator-simple"
@@ -166,8 +229,8 @@ something: weird
 
 	docs.When("Render is invoked")
 	request := &api.Request{
-		SourceBaseDir: sourcedirpath,
-		TargetBaseDir: targetdirpath,
+		SourceBaseDir:  sourcedirpath,
+		TargetBaseDir:  targetdirpath,
 		RenderSpecFile: "generated-something.yaml",
 	}
 	actualResponse := generatorlib.Render(context.TODO(), request)
@@ -200,8 +263,8 @@ parameters:
 
 	docs.When("Render is invoked")
 	request := &api.Request{
-		SourceBaseDir: sourcedirpath,
-		TargetBaseDir: targetdirpath,
+		SourceBaseDir:  sourcedirpath,
+		TargetBaseDir:  targetdirpath,
 		RenderSpecFile: "generated-missing.yaml",
 	}
 	actualResponse := generatorlib.Render(context.TODO(), request)
@@ -296,8 +359,8 @@ parameters: {}
 
 	docs.When("Render is invoked")
 	request := &api.Request{
-		SourceBaseDir: sourcedirpath,
-		TargetBaseDir: targetdirpath,
+		SourceBaseDir:  sourcedirpath,
+		TargetBaseDir:  targetdirpath,
 		RenderSpecFile: "generated-items.yaml",
 	}
 	actualResponse := generatorlib.Render(context.TODO(), request)
@@ -330,13 +393,13 @@ parameters: {}
 	require.Equal(t, expectedResponse, actualResponse)
 	actual1, err := dir.ReadFile(context.TODO(), expectedFilename1)
 	require.Nil(t, err)
-	require.Equal(t, expectedContent1, string(actual1))
+	require.Equal(t, expectedContent1, strings.Replace(string(actual1), "\r\n", "\n", -1))
 	actual2, err := dir.ReadFile(context.TODO(), expectedFilename2)
 	require.Nil(t, err)
-	require.Equal(t, expectedContent2, string(actual2))
+	require.Equal(t, expectedContent2, strings.Replace(string(actual2), "\r\n", "\n", -1))
 	actual3, err := dir.ReadFile(context.TODO(), expectedFilename3)
 	require.Nil(t, err)
-	require.Equal(t, expectedContent3, string(actual3))
+	require.Equal(t, expectedContent3, strings.Replace(string(actual3), "\r\n", "\n", -1))
 	// fourth file has a condition and should have been skipped
 	_, err = dir.ReadFile(context.TODO(), expectedFilename4)
 	require.NotNil(t, err)
@@ -392,8 +455,8 @@ parameters:
 
 	docs.When("Render is invoked")
 	request := &api.Request{
-		SourceBaseDir: sourcedirpath,
-		TargetBaseDir: targetdirpath,
+		SourceBaseDir:  sourcedirpath,
+		TargetBaseDir:  targetdirpath,
 		RenderSpecFile: "generated-variablepattern.yaml",
 	}
 	actualResponse := generatorlib.Render(context.TODO(), request)
@@ -422,8 +485,8 @@ parameters: {}
 
 	docs.When("Render is invoked")
 	request := &api.Request{
-		SourceBaseDir: sourcedirpath,
-		TargetBaseDir: targetdirpath,
+		SourceBaseDir:  sourcedirpath,
+		TargetBaseDir:  targetdirpath,
 		RenderSpecFile: "generated-itemssyntax.yaml",
 	}
 	actualResponse := generatorlib.Render(context.TODO(), request)
@@ -463,8 +526,8 @@ parameters: {}
 
 	docs.When("Render is invoked")
 	request := &api.Request{
-		SourceBaseDir: sourcedirpath,
-		TargetBaseDir: targetdirpath,
+		SourceBaseDir:  sourcedirpath,
+		TargetBaseDir:  targetdirpath,
 		RenderSpecFile: "generated-items.yaml",
 	}
 	actualResponse := generatorlib.Render(context.TODO(), request)
@@ -500,8 +563,8 @@ parameters: {}
 
 	docs.When("Render is invoked")
 	request := &api.Request{
-		SourceBaseDir: sourcedirpath,
-		TargetBaseDir: targetdirpath,
+		SourceBaseDir:  sourcedirpath,
+		TargetBaseDir:  targetdirpath,
 		RenderSpecFile: "generated-invalidtargets.yaml",
 	}
 	actualResponse := generatorlib.Render(context.TODO(), request)
@@ -532,8 +595,8 @@ parameters:
 
 	docs.When("Render is invoked")
 	request := &api.Request{
-		SourceBaseDir: sourcedirpath,
-		TargetBaseDir: targetdirpath,
+		SourceBaseDir:  sourcedirpath,
+		TargetBaseDir:  targetdirpath,
 		RenderSpecFile: "generated-templatevars.yaml",
 	}
 	actualResponse := generatorlib.Render(context.TODO(), request)
@@ -580,8 +643,8 @@ parameters:
 
 	docs.When("Render is invoked")
 	request := &api.Request{
-		SourceBaseDir: sourcedirpath,
-		TargetBaseDir: targetdirpath,
+		SourceBaseDir:  sourcedirpath,
+		TargetBaseDir:  targetdirpath,
 		RenderSpecFile: "generated-templatevars.yaml",
 	}
 	actualResponse := generatorlib.Render(context.TODO(), request)
@@ -607,8 +670,8 @@ func _testRender_emptyDefaultsSuccessTestCase(t *testing.T, testcase uint, rende
 
 	docs.When("Render is invoked")
 	request := &api.Request{
-		SourceBaseDir: sourcedirpath,
-		TargetBaseDir: targetdirpath,
+		SourceBaseDir:  sourcedirpath,
+		TargetBaseDir:  targetdirpath,
 		RenderSpecFile: "generated-emptydefaults.yaml",
 	}
 	actualResponse := generatorlib.Render(context.TODO(), request)
@@ -663,8 +726,8 @@ func _testRender_emptyDefaultsErrorTestCase(t *testing.T, testcase uint, renders
 
 	docs.When("Render is invoked")
 	request := &api.Request{
-		SourceBaseDir: sourcedirpath,
-		TargetBaseDir: targetdirpath,
+		SourceBaseDir:  sourcedirpath,
+		TargetBaseDir:  targetdirpath,
 		RenderSpecFile: "generated-emptydefaults.yaml",
 	}
 	actualResponse := generatorlib.Render(context.TODO(), request)
