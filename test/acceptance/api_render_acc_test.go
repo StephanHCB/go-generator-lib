@@ -179,7 +179,7 @@ func PrintMessage() {
 			{
 				Success:          false,
 				RelativeFilePath: expectedFilename3,
-				Errors:           []error{errors.New("failed to copy file  src/sub/orig.go.tmpl: open ../output/render-1b/<nil>: The filename, directory name, or volume label syntax is incorrect.")},
+				Errors:           []error{errors.New("error evaluating template for target '<nil>': open ../output/render-1b/<nil>: The filename, directory name, or volume label syntax is incorrect.")},
 			},
 		},
 		Errors: []error{errors.New("an error occurred during rendering, see individual files")},
