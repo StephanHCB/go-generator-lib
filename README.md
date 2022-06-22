@@ -190,7 +190,7 @@ Or you can provide your own implementation of `auloggingapi.LoggingImplementatio
 ## Build and test
 
 This library uses go modules. If cloned outside your GOPATH, you can build and test it using
-`go build ./...` and `go test ./...`. This will also download all required dependencies.
+`go build ./...` and `go test ./... -coverpkg=./...`. This will also download all required dependencies.
 
 We release automatically using 
 [semantic-release](https://github.com/semantic-release/semantic-release/).
