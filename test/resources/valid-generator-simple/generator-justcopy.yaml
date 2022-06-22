@@ -5,9 +5,6 @@ templates:
   - source: 'src/sub/unknown.tmpl'
     target: 'sub/unknown.txt'
     just_copy: true
-  - source: 'src/sub/orig.go.tmpl'
-    target: '<nil>'
-    just_copy: true
 variables:
   helloMessage:
     description: 'A message to be inserted in the code.'

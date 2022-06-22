@@ -162,29 +162,18 @@ func PrintMessage() {
 }
 `
 	expectedFilename2 := "sub/unknown.txt"
-	expectedFilename3 := "<nil>"
 
-	expectedResponse := &api.Response{
-		Success: false,
-		RenderedFiles: []api.FileResult{
-			{
-				Success:          true,
-				RelativeFilePath: expectedFilename1,
-			},
-			{
-				Success:          false,
-				RelativeFilePath: expectedFilename2,
-				Errors:           []error{errors.New("failed to load template src/sub/unknown.tmpl: open ../resources/valid-generator-simple/src/sub/unknown.tmpl: The system cannot find the file specified.")},
-			},
-			{
-				Success:          false,
-				RelativeFilePath: expectedFilename3,
-				Errors:           []error{errors.New("error evaluating template for target '<nil>': open ../output/render-1b/<nil>: The filename, directory name, or volume label syntax is incorrect.")},
-			},
-		},
-		Errors: []error{errors.New("an error occurred during rendering, see individual files")},
-	}
-	require.Equal(t, expectedResponse, actualResponse)
+	require.False(t, actualResponse.Success)
+	require.Equal(t, 2, len(actualResponse.RenderedFiles))
+	require.True(t, actualResponse.RenderedFiles[0].Success)
+	require.Empty(t, actualResponse.RenderedFiles[0].Errors)
+	require.Equal(t, expectedFilename1, actualResponse.RenderedFiles[0].RelativeFilePath)
+	require.False(t, actualResponse.RenderedFiles[1].Success)
+	require.Equal(t, expectedFilename2, actualResponse.RenderedFiles[1].RelativeFilePath)
+	// linux and windows produce different error messages
+	require.Contains(t, actualResponse.RenderedFiles[1].Errors[0].Error(), "failed to load template src/sub/unknown.tmpl: open ../resources/valid-generator-simple/src/sub/unknown.tmpl: ")
+	require.Equal(t, []error{errors.New("an error occurred during rendering, see individual files")}, actualResponse.Errors)
+
 	actual1, err := dir.ReadFile(context.TODO(), expectedFilename1)
 	require.Nil(t, err)
 	require.Equal(t, toUnix(expectedContent1), toUnix(string(actual1)))
