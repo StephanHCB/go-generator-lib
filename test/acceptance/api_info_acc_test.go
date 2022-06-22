@@ -16,7 +16,7 @@ func TestFindGeneratorNames_ShouldReturnCorrectList(t *testing.T) {
 	actual, err := generatorlib.FindGeneratorNames(context.TODO(), sourcedir)
 
 	docs.Then("the list of available generators is returned")
-	expected := []string{"docker", "emptydefaults", "items", "main", "templatevars"}
+	expected := []string{"docker", "emptydefaults", "items", "justcopy", "main", "templatevars"}
 	require.Nil(t, err)
 	require.Equal(t, expected, actual)
 }

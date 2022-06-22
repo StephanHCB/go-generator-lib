@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/Masterminds/sprig"
 	"github.com/StephanHCB/go-generator-lib/api"
+	"github.com/StephanHCB/go-generator-lib/internal/implementation/templatewrapper"
 	"github.com/StephanHCB/go-generator-lib/internal/repository/generatordir"
 	"github.com/StephanHCB/go-generator-lib/internal/repository/targetdir"
 	"regexp"
@@ -197,7 +198,7 @@ func (i *GeneratorImpl) constructAndValidateParameterMap(_ context.Context, genS
 }
 
 func (i *GeneratorImpl) renderAllTemplates(ctx context.Context, genSpec *api.GeneratorSpec, parameters map[string]interface{}, sourceDir *generatordir.GeneratorDirectory, targetDir *targetdir.TargetDirectory) ([]api.FileResult, bool) {
-	renderedFiles := []api.FileResult{}
+	var renderedFiles []api.FileResult
 	allSuccessful := true
 	for _, tplSpec := range genSpec.Templates {
 		rendered, success := i.renderSingleTemplate(ctx, &tplSpec, parameters, sourceDir, targetDir)
@@ -214,7 +215,7 @@ func (i *GeneratorImpl) renderSingleTemplate(ctx context.Context, tplSpec *api.T
 		return []api.FileResult{i.errorFileResult(ctx, tplSpec.RelativeTargetPath, fmt.Errorf("failed to load template %s: %s", tplSpec.RelativeSourcePath, err))}, false
 	}
 
-	tmpl, err := template.New(templateName).Funcs(sprig.TxtFuncMap()).Parse(string(templateContents))
+	tmplw, err := templatewrapper.New(tplSpec.JustCopy, templateContents, templateName, tplSpec.RelativeSourcePath).Parse()
 	if err != nil {
 		return []api.FileResult{i.errorFileResult(ctx, tplSpec.RelativeTargetPath, fmt.Errorf("failed to parse template %s: %s", tplSpec.RelativeSourcePath, err))}, false
 	}
@@ -225,17 +226,17 @@ func (i *GeneratorImpl) renderSingleTemplate(ctx context.Context, tplSpec *api.T
 		for counter, item := range tplSpec.WithItems {
 			parameters["item"] = item
 			renderedFiles, allSuccessful = i.renderSingleTemplateIteration(ctx, tplSpec, parameters, templateName, fmt.Sprintf("_%d", counter+1),
-				fmt.Sprintf(" for item #%d", counter+1), renderedFiles, allSuccessful, tmpl, targetDir)
+				fmt.Sprintf(" for item #%d", counter+1), renderedFiles, allSuccessful, tmplw, targetDir)
 		}
 	} else {
 		renderedFiles, allSuccessful = i.renderSingleTemplateIteration(ctx, tplSpec, parameters, templateName, "",
-			"", renderedFiles, allSuccessful, tmpl, targetDir)
+			"", renderedFiles, allSuccessful, tmplw, targetDir)
 	}
 	return renderedFiles, allSuccessful
 }
 
 func (i *GeneratorImpl) renderSingleTemplateIteration(ctx context.Context, tplSpec *api.TemplateSpec, parameters map[string]interface{}, templateName string, templateNameExtension string,
-	errorMessageItemExtension string, renderedFiles []api.FileResult, allSuccessful bool, tmpl *template.Template, targetDir *targetdir.TargetDirectory) ([]api.FileResult, bool) {
+	errorMessageItemExtension string, renderedFiles []api.FileResult, allSuccessful bool, tmpl *templatewrapper.TemplateWrapper, targetDir *targetdir.TargetDirectory) ([]api.FileResult, bool) {
 	targetPath, err := i.renderString(ctx, parameters, fmt.Sprintf("%s_path%s", templateName, templateNameExtension), tplSpec.RelativeTargetPath)
 	if err != nil {
 		renderedFiles = append(renderedFiles, i.errorFileResult(ctx, targetPath, fmt.Errorf("error evaluating target path from '%s'%s: %s", tplSpec.RelativeTargetPath, errorMessageItemExtension, err)))
@@ -269,9 +270,9 @@ func (i *GeneratorImpl) evaluateCondition(ctx context.Context, condition string,
 	return rendered != "false" && rendered != "0" && rendered != "no" && rendered != "skip", nil
 }
 
-func (i *GeneratorImpl) renderAndWriteFile(ctx context.Context, parameters map[string]interface{}, tmpl *template.Template, templateName string, targetDir *targetdir.TargetDirectory, targetPath string) error {
+func (i *GeneratorImpl) renderAndWriteFile(ctx context.Context, parameters map[string]interface{}, tmplw *templatewrapper.TemplateWrapper, templateName string, targetDir *targetdir.TargetDirectory, targetPath string) error {
 	var buf bytes.Buffer
-	err := tmpl.ExecuteTemplate(&buf, templateName, parameters)
+	err := tmplw.Write(&buf, templateName, parameters)
 	if err != nil {
 		// unsure if this is reachable. All errors I've been able to produce are found during template parse
 		return err
