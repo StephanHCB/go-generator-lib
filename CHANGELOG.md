@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/StephanHCB/go-generator-lib/compare/v1.4.0...v1.4.1) (2022-06-22)
+
+
+### Bug Fixes
+
+* **#23:** explain test coverage in readme ([e35b76c](https://github.com/StephanHCB/go-generator-lib/commit/e35b76c8861be37de445067ecb41aef6a69d1806)), closes [#23](https://github.com/StephanHCB/go-generator-lib/issues/23)
+
 # [1.4.0](https://github.com/StephanHCB/go-generator-lib/compare/v1.3.0...v1.4.0) (2022-06-22)
 
 
