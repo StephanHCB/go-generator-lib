@@ -1,3 +1,16 @@
+# [1.4.0](https://github.com/StephanHCB/go-generator-lib/compare/v1.3.0...v1.4.0) (2022-06-22)
+
+
+### Bug Fixes
+
+* **#19:** fix tests for linux ([17a1616](https://github.com/StephanHCB/go-generator-lib/commit/17a16165b83b007fd18b952f42c081394fa868e4))
+
+
+### Features
+
+* **#19:** added option to only copy a file without templating ([50f1048](https://github.com/StephanHCB/go-generator-lib/commit/50f1048fb40cd5ad40472cdb5641ed272230ab2a)), closes [#19](https://github.com/StephanHCB/go-generator-lib/issues/19)
+* **#19:** added option to only copy a file without templating, supporting withItems and conditions ([828678f](https://github.com/StephanHCB/go-generator-lib/commit/828678f423e8cc72166203f7db498a362ae03279)), closes [#19](https://github.com/StephanHCB/go-generator-lib/issues/19)
+
 # [1.3.0](https://github.com/StephanHCB/go-generator-lib/compare/v1.2.0...v1.3.0) (2021-09-30)
 
 
