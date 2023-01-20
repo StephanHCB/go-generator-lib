@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/StephanHCB/go-generator-lib/compare/v1.4.1...v1.4.2) (2023-01-20)
+
+
+### Bug Fixes
+
+* **#28:** fix release scripts ([d9760a5](https://github.com/StephanHCB/go-generator-lib/commit/d9760a58c56846ce56a7f919b1d83fd31ca16757))
+
 ## [1.4.1](https://github.com/StephanHCB/go-generator-lib/compare/v1.4.0...v1.4.1) (2022-06-22)
 
 
