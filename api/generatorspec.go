@@ -23,6 +23,7 @@ type TemplateSpec struct {
 	RelativeTargetPath string        `yaml:"target"`
 	Condition          string        `yaml:"condition"`
 	WithItems          []interface{} `yaml:"with_items"`
+	WithFiles          []string      `yaml:"with_files"`
 	JustCopy           bool          `yaml:"just_copy"`
 }
 

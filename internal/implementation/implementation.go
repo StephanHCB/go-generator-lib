@@ -11,6 +11,7 @@ import (
 	"github.com/StephanHCB/go-generator-lib/internal/repository/generatordir"
 	"github.com/StephanHCB/go-generator-lib/internal/repository/targetdir"
 	"regexp"
+	"sort"
 	"strings"
 	"text/template"
 )
@@ -201,14 +202,64 @@ func (i *GeneratorImpl) renderAllTemplates(ctx context.Context, genSpec *api.Gen
 	var renderedFiles []api.FileResult
 	allSuccessful := true
 	for _, tplSpec := range genSpec.Templates {
-		rendered, success := i.renderSingleTemplate(ctx, &tplSpec, parameters, sourceDir, targetDir)
+		rendered, success := i.renderSingleTemplateWithFiles(ctx, &tplSpec, parameters, sourceDir, targetDir)
 		renderedFiles = append(renderedFiles, rendered...)
 		allSuccessful = allSuccessful && success
 	}
 	return renderedFiles, allSuccessful
 }
 
-func (i *GeneratorImpl) renderSingleTemplate(ctx context.Context, tplSpec *api.TemplateSpec, parameters map[string]interface{}, sourceDir *generatordir.GeneratorDirectory, targetDir *targetdir.TargetDirectory) ([]api.FileResult, bool) {
+func (i *GeneratorImpl) renderSingleTemplateWithFiles(ctx context.Context, tplSpec *api.TemplateSpec, parameters map[string]interface{}, sourceDir *generatordir.GeneratorDirectory, targetDir *targetdir.TargetDirectory) ([]api.FileResult, bool) {
+	if len(tplSpec.WithFiles) > 0 {
+		fileList := make([]string, 0)
+		for _, relativeGlobExpression := range tplSpec.WithFiles {
+			matches, err := sourceDir.Glob(ctx, relativeGlobExpression)
+			if err != nil {
+				return []api.FileResult{i.errorFileResult(ctx, tplSpec.RelativeTargetPath, fmt.Errorf("failed to resolve template glob %s: %s", relativeGlobExpression, err))}, false
+			}
+			fileList = append(fileList, matches...)
+		}
+
+		sort.Strings(fileList)
+
+		renderedFiles := []api.FileResult{}
+		allSuccessful := true
+		for counter, item := range fileList {
+			parameters["file"] = item
+
+			tmpTplName := fmt.Sprintf("%s_path_source", strings.ReplaceAll(item, "/", "_"))
+
+			subTplSpec := *tplSpec
+			renderedSourcePath, err := i.renderString(ctx, parameters, tmpTplName, tplSpec.RelativeSourcePath)
+			if err != nil {
+				renderedFiles = append(renderedFiles, i.errorFileResult(ctx, tplSpec.RelativeTargetPath, fmt.Errorf("failed to render source path from glob %s for file value %s -- skipping entry: %s", tplSpec.RelativeSourcePath, item, err)))
+				allSuccessful = false
+			} else {
+				subTplSpec.RelativeSourcePath = renderedSourcePath
+
+				rendered, success := i.renderSingleTemplate(ctx, &subTplSpec, parameters, sourceDir, targetDir, fmt.Sprintf("_%d", counter+1), fmt.Sprintf(" for file #%d (%s)", counter+1, item))
+				if success {
+					renderedFiles = append(renderedFiles, rendered...)
+				} else {
+					allSuccessful = false
+				}
+			}
+		}
+		return renderedFiles, allSuccessful
+	} else {
+		return i.renderSingleTemplate(ctx, tplSpec, parameters, sourceDir, targetDir, "", "")
+	}
+}
+
+func (i *GeneratorImpl) renderSingleTemplate(
+	ctx context.Context,
+	tplSpec *api.TemplateSpec,
+	parameters map[string]interface{},
+	sourceDir *generatordir.GeneratorDirectory,
+	targetDir *targetdir.TargetDirectory,
+	templateNameExtension string,
+	errorMessageItemExtension string,
+) ([]api.FileResult, bool) {
 	templateName := strings.ReplaceAll(tplSpec.RelativeSourcePath, "/", "_")
 	templateContents, err := sourceDir.ReadFile(ctx, tplSpec.RelativeSourcePath)
 	if err != nil {

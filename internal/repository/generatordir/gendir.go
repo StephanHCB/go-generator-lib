@@ -8,12 +8,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 )
 
-type GeneratorDirectory struct{
+type GeneratorDirectory struct {
 	baseDir string
 }
 
@@ -22,7 +23,7 @@ func Instance(_ context.Context, baseDir string) *GeneratorDirectory {
 }
 
 func (d *GeneratorDirectory) CheckValid(_ context.Context) error {
-	if strings.HasSuffix(d.baseDir, "/") || strings.HasSuffix(d.baseDir, "\\"){
+	if strings.HasSuffix(d.baseDir, "/") || strings.HasSuffix(d.baseDir, "\\") {
 		return fmt.Errorf("invalid generator directory: baseDir %s must not contain trailing slash", d.baseDir)
 	}
 	fileInfo, err := os.Stat(d.baseDir)
@@ -93,6 +94,36 @@ func (d *GeneratorDirectory) ReadFile(ctx context.Context, relativePath string) 
 	}
 
 	return bytes, nil
+}
+
+func (d *GeneratorDirectory) Glob(ctx context.Context, relativeGlob string) ([]string, error) {
+	if err := d.CheckValid(ctx); err != nil {
+		return []string{}, err
+	}
+
+	filenames, err := filepath.Glob(path.Join(d.baseDir, relativeGlob))
+	if err != nil {
+		return []string{}, err
+	}
+
+	relativeFilenames := make([]string, 0)
+	for _, fn := range filenames {
+		rel, err := filepath.Rel(d.baseDir, fn)
+		if err != nil {
+			// unreachable as far as I'm aware
+			return []string{}, fmt.Errorf("file glob %s leads to file that is not inside base directory %s - this is forbidden", relativeGlob, d.baseDir)
+		}
+
+		rel = strings.ReplaceAll(rel, `\`, `/`) // sanitize under Windows
+
+		if strings.HasPrefix(rel, "../") {
+			return []string{}, fmt.Errorf("file glob %s leads to file that is not inside base directory %s - this is forbidden", relativeGlob, d.baseDir)
+		}
+
+		relativeFilenames = append(relativeFilenames, rel)
+	}
+
+	return relativeFilenames, nil
 }
 
 // --- helper methods ---

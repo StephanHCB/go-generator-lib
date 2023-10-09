@@ -27,6 +27,11 @@ templates:
      - health
      - reservations
      - skipped
+  - source: '{{ .file }}'
+    target: 'output/{{ .file | replace ".tmpl" "" }}'
+    with_files:
+      - 'src/sub/*.tmpl'
+      - '*/*.go.tmpl'
 variables:
   serviceUrl:
     description: 'The URL of the service repository, to be used in imports etc.'
@@ -57,7 +62,7 @@ It also specifies which parameter variables will be available during rendering.
 
 The idea is that you keep your generators under version control.
 
-Note how you can create ansible-style loops using the same template to generate multiple output files using `with_items`.
+You can create ansible-style loops using the same template to generate multiple output files using `with_items`.
 In fact, the output file name is always parsed using the same template engine as the actual templates,
 so you could also use other variables in it. 
 
@@ -68,12 +73,20 @@ a whole yaml data structure, you simply access it as `{{ .item.some.field }}`.
 _At this time, it is not possible to dynamically assign the full list in with_items from a variable, 
 so you can not dynamically determine the number of render runs._
 
-Note how you can add a `condition` that will be evaluated for the template. Inside it, you can use
+If you set `with_files` to a list of file globs relative to the template base directory, the source
+and target pair is used multiple times, with the `file` variable set to the current relative path of
+any files in the template that match the glob patterns. For `with_files`, both the source and target
+path are parsed as templates, with the `file` parameter set to the relative path of that matched the glob.
+You can even use `file` inside your template, it's just set as a parameter for template parsing.
+
+_Note that globs that navigate outside the template directory are forbidden for security reasons._
+
+You can also add a `condition` that will be evaluated for the template. Inside it, you can use
 variables, or even `item`. If the condition evaluates to any one of `0`, `false`, `skip`, `no` the template will not be 
 rendered. Note that the empty string counts as true, that means that if you do not specify a condition,
 the template is rendered.
 
-Also note how output directories are created for you on the fly if they don't exist.
+Any output directories are created for you on the fly if they don't exist.
   
 The [golang template language](https://golang.org/pkg/text/template/#example_Template) is pretty 
 versatile, vaguely similar to the .j2 templates used by ansible. Here's a very simple example
