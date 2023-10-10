@@ -1,0 +1,16 @@
+templates:
+  - source: '{{ .file }}'
+    target: '{{ .file | replace ".tmpl" "" }}.txt'
+    with_files:
+      - 'src/sub/*.go.tmpl'
+      - 'src/*.*.tmpl'
+variables:
+  serviceUrl:
+    description: 'The URL of the service repository, to be used in imports etc.'
+    default: 'github.com/StephanHCB/temp'
+  serviceName:
+    description: 'The name of the service to be rendered.'
+    pattern: '^[a-z-]+$'
+  helloMessage:
+    description: 'A message to be inserted in the code.'
+    default: 'hello world'

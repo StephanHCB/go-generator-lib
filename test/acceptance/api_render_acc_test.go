@@ -742,3 +742,87 @@ parameters:
 `
 	_testRender_emptyDefaultsErrorTestCase(t, 18, renderspec, "parameter 'missingDefault' is required but missing")
 }
+
+func TestRender_ShouldWriteExpectedFilesForFileglobs(t *testing.T) {
+	docs.Given("a valid generator source directory and a valid target directory")
+	sourcedirpath := "../resources/valid-generator-simple"
+	targetdirpath := "../output/render-19"
+	require.Nil(t, os.RemoveAll(targetdirpath))
+	require.Nil(t, os.Mkdir(targetdirpath, 0755))
+
+	docs.Given("a valid render spec file for generator items, which uses with_files and template directives")
+	renderspec := `generator: files
+parameters:
+  serviceName: 'hello-service'
+`
+	dir := targetdir.Instance(context.TODO(), targetdirpath)
+	require.Nil(t, dir.WriteFile(context.TODO(), "generated-files.yaml", []byte(renderspec)))
+
+	docs.When("Render is invoked")
+	request := &api.Request{
+		SourceBaseDir:  sourcedirpath,
+		TargetBaseDir:  targetdirpath,
+		RenderSpecFile: "generated-files.yaml",
+	}
+	actualResponse := generatorlib.Render(context.TODO(), request)
+
+	docs.Then("the return value is as expected and the correct files are written")
+	expectedFilename1 := "src/main.go.txt"
+	expectedContent1 := `package src
+
+import (
+	"fmt"
+	"github.com/StephanHCB/temp/sub"
+)
+
+func main() {
+	fmt.Println("hello-service started")
+	sub.PrintMessage()
+}
+`
+	expectedFilename2 := "src/sub/orig.go.txt"
+	expectedContent2 := `package sub
+
+import "fmt"
+
+func PrintMessage() {
+	fmt.Println("hello world")
+}
+`
+	expectedFilename3 := "src/sub/sub.go.txt"
+	expectedContent3 := `package sub
+
+import "fmt"
+
+func PrintMessage() {
+	fmt.Println("HELLO WORLD")
+}
+`
+	expectedResponse := &api.Response{
+		Success: true,
+		RenderedFiles: []api.FileResult{
+			{
+				Success:          true,
+				RelativeFilePath: expectedFilename1,
+			},
+			{
+				Success:          true,
+				RelativeFilePath: expectedFilename2,
+			},
+			{
+				Success:          true,
+				RelativeFilePath: expectedFilename3,
+			},
+		},
+	}
+	require.Equal(t, expectedResponse, actualResponse)
+	actual1, err := dir.ReadFile(context.TODO(), expectedFilename1)
+	require.Nil(t, err)
+	require.Equal(t, expectedContent1, strings.Replace(string(actual1), "\r\n", "\n", -1))
+	actual2, err := dir.ReadFile(context.TODO(), expectedFilename2)
+	require.Nil(t, err)
+	require.Equal(t, expectedContent2, strings.Replace(string(actual2), "\r\n", "\n", -1))
+	actual3, err := dir.ReadFile(context.TODO(), expectedFilename3)
+	require.Nil(t, err)
+	require.Equal(t, expectedContent3, strings.Replace(string(actual3), "\r\n", "\n", -1))
+}
