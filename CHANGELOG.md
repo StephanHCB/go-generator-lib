@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/StephanHCB/go-generator-lib/compare/v1.4.2...v1.5.0) (2023-10-10)
+
+
+### Features
+
+* **#32:** add optional with_files loop ([3f7741e](https://github.com/StephanHCB/go-generator-lib/commit/3f7741ea265c0906cc1f2599ac195ef3034f6c08)), closes [#32](https://github.com/StephanHCB/go-generator-lib/issues/32)
+
 ## [1.4.2](https://github.com/StephanHCB/go-generator-lib/compare/v1.4.1...v1.4.2) (2023-01-20)
 
 
